@@ -1,11 +1,12 @@
 <script setup>
-// import { useCartStore } from "@/stores/cartStore";
+import { useCartStore } from "@/stores/cartStore";
 
 const cartStore = useCartStore();
 
 onMounted(() => {
-  cartStore.loadCartFromCookie(); // Load cart data from the cookie
+  cartStore.loadCartFromSupabase(); // Load cart data from Supabase
 });
+
 </script>
 
 <template>
@@ -25,13 +26,13 @@ onMounted(() => {
           >
             <div>
               <img
-                :src="item.image || '/images/image-product-1-thumbnail.jpg'"
+                :src="item.thumbnail || '/images/image-product-1-thumbnail.jpg'"
                 class="w-10 rounded"
                 alt="product"
               />
             </div>
             <div class="text-start">
-              <h3 class="text-sm">{{ item.name }}</h3>
+              <h3 class="text-sm"> {{ item.title }} {{ item.cart_id }}</h3>
               <p class="text-sm">
                 ${{ item.price.toFixed(2) }} x {{ item.quantity }}
                 <strong class="text-black dark:text-white ms-1">
@@ -41,7 +42,7 @@ onMounted(() => {
             </div>
             <div>
               <button
-                @click="cartStore.removeItem(item.id)"
+                @click="cartStore.removeItem(item.cart_id.toString())"
                 class="text-red-500 hover:text-red-700"
               >
               <i class="fa-solid fa-trash-can"></i>

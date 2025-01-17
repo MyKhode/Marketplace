@@ -16,21 +16,22 @@ const cartStore = useCartStore();
 
 function toggleCart() {
   cartStore.toggleCartVisibility();
+  console.log(cartStore.toggleCart);
 }
 
 // Log user metadata on component mount
 // onMounted(() => {
 //   if (user) {
 //     console.log("User Metadata:", metadata.value);
-//     console.log("Avatar URL:", user.user_metadata.avatar_url);
+//     console.log("Avatar URL :", user.user_metadata.avatar_url);
 //   } else {
-//     console.log("No user is logged in.");
+//     console.log("No  d user is logged in.");
 //   }
 // });
 </script>
 
 <template>
-  <cart :quantity="cartStore.cartItems.length" v-if="cartStore.toggleCart" />
+  <cart v-if="cartStore.toggleCart" />
   
   <nav
     class="fixed top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
@@ -130,7 +131,7 @@ function toggleCart() {
         </svg>
       </button>
       <div class="flex items-center space-x-2 lg:ml-auto">
-        <button @click="toggleCart" class="ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
+        <button v-if="(['/product/'].some(path => $route.path.startsWith(path)))" @click="toggleCart" class="ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
           <i class="fa-solid fa-cart-arrow-down"></i> &nbsp;
           <div class="hidden lg:block">Cart</div> ({{ cartStore.cartItems.length }})
         </button>
