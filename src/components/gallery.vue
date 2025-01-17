@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { supabase } from "@/services/supabase";
 import { useCartStore } from "@/stores/cartStore";
@@ -30,15 +30,23 @@ async function fetchProductDetails() {
       .select("fullname")
       .eq("id", productData.seller_id)
       .single();
+    
+    const { data: cartData, error: cartError } = await supabase
+      .from("cart")
+      .select("*")
+      .eq("user_id", supabase.auth.user().id)
+      .eq("seller_id", productData.seller_id);
 
     if (sellerError) throw sellerError;
     seller.value = sellerData?.fullname || "Unknown Seller";
+   
+    cartStore.setSellerId(productData.seller_id);
+    cartStore.loadCartFromSupabase(productData.seller_id);
 
     const { data: imagesData, error: imagesError } = await supabase
       .from("product_image_overview")
       .select("image1, image2, image3, image4")
       .eq("id", productData.image_overview_id);
-
 
     if (imagesError) throw imagesError;
     const { image1, image2, image3, image4 } = imagesData[0];
@@ -48,15 +56,20 @@ async function fetchProductDetails() {
   }
 }
 
+// Watch for route changes and refetch product details
+watch(() => route.params.id, fetchProductDetails, { immediate: true });
+
 function addCartButton() {
   if (quantity.value > 0) {
     const item = {
-      id: product.value.product_id,
-      name: product.value.title,
+      product_id: product.value.product_id,
+      title: product.value.title,
       price: product.value.price,
+      thumbnail: product.value.thumbnail,
       quantity: quantity.value,
     };
     cartStore.addItem(item);
+    console.log("Item added to cart:", item);
   }
 }
 
@@ -64,6 +77,7 @@ onMounted(() => {
   fetchProductDetails();
 });
 </script>
+
 
 <template>
   <Navbar />
