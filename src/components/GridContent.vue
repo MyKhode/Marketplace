@@ -102,62 +102,58 @@
   </template>
   
   <script>
-  import { ref, computed } from "vue";
+  import { ref, computed, onMounted } from "vue";
+  import { supabase } from "@/services/supabase";
   
   export default {
     setup() {
       const activeCategory = ref("all");
-      const categories = ref(["all", "electronics", "fashion", "home", "books"]);
-      const products = ref([
-        {
-          id: 1,
-          name: "Wireless Headphones",
-          category: "electronics",
-          price: 99.99,
-          oldPrice: 129.99,
-          image: "https://d2v5dzhdg4zhx3.cloudfront.net/web-assets/images/storypages/primary/ProductShowcasesampleimages/JPEG/Product+Showcase-1.jpg",
-          link: "#",
-        },
-        {
-          id: 2,
-          name: "Cotton T-shirt",
-          category: "fashion",
-          price: 25.0,
-          image: "https://m.media-amazon.com/images/I/817zi0yXnJL.jpg",
-          link: "#",
-        },
-        {
-          id: 3,
-          name: "Sofa Set",
-          category: "home",
-          price: 499.99,
-          image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkt8H-ajFVflLnLwQeVACFXe86LlI7J2QpzQ&s",
-          link: "#",
-        },
-        {
-          id: 4,
-          name: "Fiction Book",
-          category: "books",
-          price: 14.99,
-          image: "https://www.ugaoo.com/cdn/shop/products/AtlantisPlanter-PastelBlue.jpg?v=1704867612&width=1100",
-          link: "#",
-        },
-      ]);
-  
+      const categories = ref(["all"]);
+      const products = ref([]);
       const inputSearch = ref("");
   
+      const fetchProducts = async () => {
+        const { data: productData, error: productError } = await supabase
+          .from("product")
+          .select("product_id, title, price, discount, thumbnail, category_id");
+  
+        const { data: categoryData, error: categoryError } = await supabase
+          .from("product_category")
+          .select("category_id, name");
+  
+        if (productError || categoryError) {
+          console.error("Error fetching data:", productError || categoryError);
+        } else {
+          categories.value = ["", ...categoryData.map(category => category.name)];
+          products.value = productData.map(product => {
+            const category = categoryData.find(cat => cat.category_id === product.category_id);
+            return {
+              id: product.product_id,
+              name: product.title,
+              price: product.price,
+              oldPrice: product.discount,
+              image: product.thumbnail,
+              category: category ? category.name : "other"
+            };
+          });
+        }
+      };
+  
       const filteredProducts = computed(() => {
-        return products.value.filter(
-          (product) =>
-            (activeCategory.value === "all" ||
-              product.category === activeCategory.value) &&
-            product.name.toLowerCase().includes(inputSearch.value.toLowerCase())
-        );
+        return products.value.filter(product => {
+          const matchesCategory = activeCategory.value === "all" || product.category === activeCategory.value;
+          const matchesSearch = product.name.toLowerCase().includes(inputSearch.value.toLowerCase());
+          return matchesCategory && matchesSearch;
+        });
       });
   
       function setActiveCategory(category) {
         activeCategory.value = category;
       }
+  
+      onMounted(() => {
+        fetchProducts();
+      });
   
       return {
         products,
@@ -170,6 +166,7 @@
     },
   };
   </script>
+  
   
   <style>
   #app {
