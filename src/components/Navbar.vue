@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import cart from "./cart.vue";
+import router from "@/router";
 
 let toggle = ref(false);
 const cartStore = useCartStore();
@@ -13,6 +14,7 @@ function toggleCart() {
 </script>
 <template>
   <cart :quantity="addCart" v-if="cartStore.toggleCart" />
+  
   <nav
     class="fixed top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
     <div class="flex items-center">
@@ -47,23 +49,25 @@ function toggleCart() {
               </span>
             </li>
           </button>
-          <a href="#"
-            class="aria-disabled:opacity-50 aria-disabled:pointer-events-none dark:hover:text-white dark:focus:text-white dark:data-[selected=true]:text-white dark:bg-opacity-70 flex select-none items-center rounded-md bg-transparent py-1.5 px-2.5 align-middle font-sans text-stone-600 transition-all duration-300 ease-in hover:bg-stone-200 hover:text-stone-800 focus:bg-stone-200 focus:text-stone-800">
-            <span class="me-2.5 mr-1.5 grid shrink-0 place-items-center"><svg width="1.5em" height="1.5em"
-                stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                color="currentColor" class="h-4 w-4">
-                <path
-                  d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z"
-                  stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M4.271 18.3457C4.271 18.3457 6.50002 15.5 12 15.5C17.5 15.5 19.7291 18.3457 19.7291 18.3457"
-                  stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path
-                  d="M12 12C13.6569 12 15 10.6569 15 9C15 7.34315 13.6569 6 12 6C10.3431 6 9 7.34315 9 9C9 10.6569 10.3431 12 12 12Z"
-                  stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </span>
-            <small class="font-sans text-sm text-current antialiased">Account</small>
-          </a>
+          <router-link to="/profile">
+            <a href="#"
+              class="aria-disabled:opacity-50 aria-disabled:pointer-events-none dark:hover:text-white dark:focus:text-white dark:data-[selected=true]:text-white dark:bg-opacity-70 flex select-none items-center rounded-md bg-transparent py-1.5 px-2.5 align-middle font-sans text-stone-600 transition-all duration-300 ease-in hover:bg-stone-200 hover:text-stone-800 focus:bg-stone-200 focus:text-stone-800">
+              <span class="me-2.5 mr-1.5 grid shrink-0 place-items-center"><svg width="1.5em" height="1.5em"
+                  stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                  color="currentColor" class="h-4 w-4">
+                  <path
+                    d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z"
+                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M4.271 18.3457C4.271 18.3457 6.50002 15.5 12 15.5C17.5 15.5 19.7291 18.3457 19.7291 18.3457"
+                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path
+                    d="M12 12C13.6569 12 15 10.6569 15 9C15 7.34315 13.6569 6 12 6C10.3431 6 9 7.34315 9 9C9 10.6569 10.3431 12 12 12Z"
+                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </span>
+              <small class="font-sans text-sm text-current antialiased">Account</small>
+            </a>
+          </router-link>
           <a href="#"
             class="aria-disabled:opacity-50 aria-disabled:pointer-events-none dark:hover:text-white dark:focus:text-white dark:data-[selected=true]:text-white dark:bg-opacity-70 flex select-none items-center rounded-md bg-transparent py-1.5 px-2.5 align-middle font-sans text-stone-600 transition-all duration-300 ease-in hover:bg-stone-200 hover:text-stone-800 focus:bg-stone-200 focus:text-stone-800">
             <span class="me-2.5 mr-1.5 grid shrink-0 place-items-center"><svg width="1.5em" height="1.5em"

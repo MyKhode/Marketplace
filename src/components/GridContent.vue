@@ -4,7 +4,7 @@
       class="grid grid-cols-12 min-h-screen items-center max-w-screen-lg mt-20 mx-auto py-10 px-5 gap-x-3 place-content-center"
     >
       <h1 class="capitalize col-span-12 text-left mb-5 text-3xl font-bold">
-        Shop by Category hello
+        Shop by Category
       </h1>
       <form class="col-span-12 md:col-span-6">
         <label

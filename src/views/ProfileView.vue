@@ -40,7 +40,7 @@ async function changeNickname() {
 <template>
   <h1 class="mb-2 text-3xl font-medium">Profile</h1>
   <p class="mb-4 text-xl">Hi, {{ name }}</p>
-
+  
   <div class="inline-grid grid-cols-1 gap-8 md:grid-cols-2">
     <form
       class="inline-flex flex-col space-y-2"
