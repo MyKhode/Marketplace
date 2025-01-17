@@ -12,7 +12,7 @@ onMounted(() => {
   <div class="flex justify-center content-center">
     <div class="absolute top-16 lg:top-15 lg:right-10 z-20 w-80 bg-[var(--color-background)] rounded-lg shadow-2xl bg-white dark:bg-[#1A202C]">
       <div class="title p-4">
-        <p class="font-bold">Cart</p>
+        <p class="font-bold">Cart gg</p>
       </div>
       <div class="divider h-px bg-[var(--color-border)]"></div>
       <div class="body text-[#a1a1a1] font-bold text-center p-5">
