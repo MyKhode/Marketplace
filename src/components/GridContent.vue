@@ -70,7 +70,7 @@
         <div
           v-for="(product, index) in filteredProducts"
           :key="index"
-          class="col-span-12 md:col-span-6 lg:col-span-4 sm:flex bg-indigo-50 rounded-lg p-5 gap-5 h-full border border-transparent cursor-pointer hover:shadow-lg hover:border-indigo-300"
+          class="col-span-12 md:col-span-6 lg:col-span-4 sm:flex bg-white  rounded-lg p-5 gap-5 h-full border border-transparent cursor-pointer hover:shadow-lg hover:border-indigo-300"
         >
           <router-link :to="`/product/${product.id}`" class="w-full">
             <img
@@ -82,14 +82,15 @@
               <h2 class="text-lg font-semibold truncate">
                 {{ product.name }}
               </h2>
-              <p class="text-gray-500 text-sm mb-2 capitalize">{{ product.category }}</p>
+              <p class="text-orange-500 text-sm mb-2 capitalize">{{ product.category }}</p>
               <div class="flex items-center">
                 <p class="text-lg font-semibold text-black cursor-auto my-3">
-                  ${{ product.price }}
+                  ${{product.price - product.discount.toFixed(2) }}
                 </p>
-                <del v-if="product.oldPrice">
+                <del v-if="product.discount">
                   <p class="text-sm text-gray-600 cursor-auto ml-2">
-                    ${{ product.oldPrice }}
+                    <!-- ${{ product.oldPrice + product.discount }} -->
+                    ${{  product.price.toFixed(2) }}
                   </p>
                 </del>
               </div>
@@ -124,14 +125,14 @@
         if (productError || categoryError) {
           console.error("Error fetching data:", productError || categoryError);
         } else {
-          categories.value = ["", ...categoryData.map(category => category.name)];
+          categories.value = ["all", ...categoryData.map(category => category.name)];
           products.value = productData.map(product => {
             const category = categoryData.find(cat => cat.category_id === product.category_id);
             return {
               id: product.product_id,
               name: product.title,
               price: product.price,
-              oldPrice: product.discount,
+              discount: product.discount,
               image: product.thumbnail,
               category: category ? category.name : "other"
             };

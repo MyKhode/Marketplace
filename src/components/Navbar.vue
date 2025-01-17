@@ -1,8 +1,15 @@
-<script setup>
-import { ref } from "vue";
-import { useCartStore } from "@/stores/cartStore";
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useCartStore } from "../stores/cartStore";
 import cart from "./cart.vue";
-import router from "@/router";
+// import router from "@/router";
+import { supabase } from "@/services/supabase";
+import { User } from "@supabase/supabase-js";
+
+const user = supabase.auth.user() as User | null;
+const metadata = ref(user?.user_metadata || {});
+// const name = ref(metadata.value?.nickname || user?.email);
+const avatar_url = ref(metadata.value?.avatar_url || 'https://media.istockphoto.com/id/1327592449/vector/default-avatar-photo-placeholder-icon-grey-profile-picture-business-man.jpg?s=612x612&w=0&k=20&c=yqoos7g9jmufJhfkbQsk-mdhKEsih6Di4WZ66t_ib7I=');
 
 let toggle = ref(false);
 const cartStore = useCartStore();
@@ -11,9 +18,19 @@ function toggleCart() {
   cartStore.toggleCartVisibility();
 }
 
+// Log user metadata on component mount
+// onMounted(() => {
+//   if (user) {
+//     console.log("User Metadata:", metadata.value);
+//     console.log("Avatar URL:", user.user_metadata.avatar_url);
+//   } else {
+//     console.log("No user is logged in.");
+//   }
+// });
 </script>
+
 <template>
-  <cart :quantity="addCart" v-if="cartStore.toggleCart" />
+  <cart :quantity="cartStore.cartItems.length" v-if="cartStore.toggleCart" />
   
   <nav
     class="fixed top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
@@ -117,8 +134,10 @@ function toggleCart() {
           <i class="fa-solid fa-cart-arrow-down"></i> &nbsp;
           <div class="hidden lg:block">Cart</div> ({{ cartStore.cartItems.length }})
         </button>
-        <img aria-expanded="false" aria-haspopup="menu" id=":RlH2:" src="https://dub.sh/iu8bOfU" alt="profile-picture"
+        <router-link to="/profile">
+          <img aria-expanded="false" aria-haspopup="menu" id=":RlH2:" :src="avatar_url " alt="profile-picture"
           class="group inline-block h-8 w-8 rounded border border-stone-800 object-cover object-center p-0.5 outline-none" />
+        </router-link>
       </div>
     </div>
   </nav>

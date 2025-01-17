@@ -1,77 +1,110 @@
 <script setup>
-import { ref } from "vue";
-import lightbox from "./lightbox.vue";
-import cart from "./cart.vue";
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { supabase } from "@/services/supabase";
 import { useCartStore } from "@/stores/cartStore";
+import lightbox from "./lightbox.vue";
+import Navbar from "./Navbar.vue";
+import AppFooter from "./AppFooter.vue";
 
+const route = useRoute();
+const product = ref({});
+const seller = ref("Unknown Seller");
+const images = ref([]);
 const quantity = ref(0);
 const cartStore = useCartStore();
+
+async function fetchProductDetails() {
+  try {
+    const { data: productData, error: productError } = await supabase
+      .from("product")
+      .select("product_id, title, price, discount, content, seller_id, image_overview_id")
+      .eq("product_id", route.params.id)
+      .single();
+
+    if (productError) throw productError;
+    product.value = productData;
+
+    const { data: sellerData, error: sellerError } = await supabase
+      .from("users")
+      .select("fullname")
+      .eq("id", productData.seller_id)
+      .single();
+
+    if (sellerError) throw sellerError;
+    seller.value = sellerData?.fullname || "Unknown Seller";
+
+    const { data: imagesData, error: imagesError } = await supabase
+      .from("product_image_overview")
+      .select("image1, image2, image3, image4")
+      .eq("id", productData.image_overview_id);
+
+
+    if (imagesError) throw imagesError;
+    const { image1, image2, image3, image4 } = imagesData[0];
+    images.value = [image1, image2, image3, image4]; // Store all images
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+  }
+}
 
 function addCartButton() {
   if (quantity.value > 0) {
     const item = {
-      id: 1, // Replace with a unique identifier for the product
-      name: "Fall Limited Edition Sneakers",
-      price: 125.0,
+      id: product.value.product_id,
+      name: product.value.title,
+      price: product.value.price,
       quantity: quantity.value,
     };
     cartStore.addItem(item);
   }
 }
+
+onMounted(() => {
+  fetchProductDetails();
+});
 </script>
 
-
 <template>
-  <Navbar/>
-  <!-- <cart :quantity="addCart" v-if="cartStore.toggleCart" /> -->
-  <div class="lg:flex lg:justify-center justify-center gap-28 lg:items-center mx-auto lg:mt-0 mt-10 h-full w-1/2 ">
-    <lightbox />
+  <Navbar />
+  <div class="lg:flex lg:justify-center gap-28 lg:items-center mx-auto lg:mt-0 mt-10 h-full w-1/2">
+    <lightbox :images="images" />
     <div class="text-left">
-      <h1
-        class="text-[var(--orange)] font-bold uppercase tracking-wide text-sm mb-2"
-      >
-        Sneaker Company
+      <h1 class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2 ">
+        {{ seller }}
       </h1>
-      <h2 class="text-2xl font-bold w-56 mb-3 lg:mb-6">
-        Fall Limited Edition Sneakers
+      <h2 class="text-2xl font-bold w-90 mb-3 lg:mb-6">
+        {{ product.title }}
       </h2>
       <p class="text-[#a1a1a1] max-w-96 mb-5">
-        These low-profile sneakers are your perfect casual wear companion.
-        Featuring a durable rubber outer sole, they’ll withstand everything the
-        weather can offer.
+        {{ product.content }}
       </p>
       <div class="flex justify-between mb-6 lg:flex-col">
         <div class="flex items-center">
-          <p class="text-2xl font-bold me-3">$125.00</p>
-          <a class="bg-[#ff7d1a33] text-sm px-2 rounded-md">50%</a>
-          
+          <p class="text-2xl font-bold me-3">${{ product.price - product.discount }}</p>
+          <a v-if="product.discount" class="bg-[#ff7d1a33] text-sm px-2 rounded-md">{{ (((product.price - (product.price-product.discount))/product.price) * 100).toFixed(2) }}%</a>
         </div>
-        <del class="text-[#a1a1a1]">$250.00</del>
+        <del v-if="product.discount" class="text-[#a1a1a1]">  ${{  product.price.toFixed(2) }}</del>
       </div>
       <div class="lg:flex lg:justify-between">
-        <div
-          class="quantity flex w-full h-12 lg:w-32 bg-[var(--color-background-mute)] rounded-md justify-between items-center mb-3"
-        >
-          <button @click="[quantity > 0 ? quantity-- : (quantity = 0)]">
-            <svg width="12" height="4" class="m-5 fill-[var(--orange)] hover:fill-[var(--orange-dark)]" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><path d="M11.357 3.332A.641.641 0 0 0 12 2.69V.643A.641.641 0 0 0 11.357 0H.643A.641.641 0 0 0 0 .643v2.046c0 .357.287.643.643.643h10.714Z" id="a"/></defs><use fill-rule="nonzero" xlink:href="#a"/></svg>
+        <div class="quantity flex w-full h-12 lg:w-32 bg-[var(--color-background-mute)] rounded-md justify-between items-center mb-3">
+          <button @click="quantity > 0 ? quantity-- : quantity = 0">
+            -
           </button>
-          <p class="light:text-black font-bold">{{ quantity }}</p>
+          <p>{{ quantity }}</p>
           <button @click="quantity++">
-            <svg width="12" height="12" class="m-5 fill-[var(--orange)] hover:fill-[var(--orange-dark)]" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><path d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z" id="b"/></defs><use fill-rule="nonzero" xlink:href="#b"/></svg>
+            +
           </button>
         </div>
-        <button
-          @click="addCartButton()"
-          class="w-50 shadow-2xl lg:w-60 h-12 w-full flex justify-center items-center bg-[#ff7d1a] text-white rounded-md hover:bg-[#ff7d1a80]"
-        >
+        <button @click="addCartButton" class="w-50 shadow-2xl lg:w-60 h-12 w-full flex justify-center items-center bg-[#ff7d1a] text-white rounded-md ml-10 hover:bg-[#ff7d1a80]">
           <p class="m-3 text-lg">
-            <i class="fa-solid fa-cart-plus"></i>
-            Add to cart
+            <i class="fa-solid fa-cart-plus"></i> Add to cart
           </p>
         </button>
       </div>
     </div>
   </div>
+  <AppFooter />
 </template>
 
 <style scoped></style>

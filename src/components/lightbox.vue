@@ -4,17 +4,25 @@ import { ref } from "vue";
 const pressed = ref(false);
 const currentIndex = ref(0);
 
+// Accept images prop
+const props = defineProps({
+  images: {
+    type: Array,
+    required: true
+  }
+});
+
 const product_src = [
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-1.jpg",
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-2.jpg",
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-3.jpg",
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-4.jpg",
+  props.images[0],
+  props.images[1],
+  props.images[2],
+  props.images[3],
 ];
 const product_thumb_src = [
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-1-thumbnail.jpg",
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-2-thumbnail.jpg",
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-3-thumbnail.jpg",
-  "https://isushmoy.github.io/ecommerce-product-page/images/image-product-4-thumbnail.jpg",
+  props.images[0],
+  props.images[1],
+  props.images[2],
+  props.images[3],
 ];
 
 // default product
@@ -30,6 +38,10 @@ function changePro(index) {
   defPro.value = product_src[currentIndex.value];
   defThumb.value = product_thumb_src[currentIndex.value];
 }
+
+console.log("heikk" + props.images[0]);
+console.log("hiii = " + defPro.value )
+
 </script>
 
 <template>
@@ -41,7 +53,7 @@ function changePro(index) {
             <img src="/images/icon-next.svg" class="w-2.5" alt="icon-next">
           </div>
         </button>
-        <img :src="defPro" class="w-96 rounded-lg lg:rounded-xl lg:mb-6 cursor-auto lg:cursor-pointer" alt="product" />
+        <img :src="defPro" class="w-96 h-96 object-cover rounded-lg lg:rounded-xl lg:mb-6 cursor-auto lg:cursor-pointer" alt="product" />
         <button class="absolute right-3 top-1/2 -translate-y-1/2 lg:hidden opacity-70 hover:opacity-80" @click="changePro((currentIndex + 1) % product_src.length)">
           <div class="bg-white px-3 py-2.5 rounded-full">
             <img src="/images/icon-next.svg" class="w-2.5" alt="icon-next">
@@ -54,7 +66,7 @@ function changePro(index) {
         <button @click="changePro(index)">
           <img
             :src="product"
-            class="w-20 rounded-xl hover:opacity-80"
+            class="w-20 h-20 object-cover rounded-md hover:opacity-80"
             :class="[
               product == defThumb
                 ? 'opacity-70 ring-2 ring-[var(--orange)]'
@@ -83,9 +95,10 @@ function changePro(index) {
             <img src="/images/icon-next.svg" class="w-2.5" alt="icon-next">
           </div>
         </button>
+        <div>defPro</div>
           <img
             :src="defPro"
-            class="w-[30rem] lg:rounded-xl mb-6"
+            class="w-20 h-20 object-cover rounded-lg  lg:rounded-xl mb-6"
             alt="product"
           />
           <button class="absolute -me-4 right-0 top-1/2 -translate-y-1/2 opacity-90 hover:opacity-100" @click="changePro((currentIndex + 1) % product_src.length)">
