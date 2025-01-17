@@ -2,6 +2,7 @@
 import { breakpointsTailwind } from "@vueuse/core";
 import { useRoute } from "vue-router";
 import GridContent from "@/components/GridContent.vue";
+import ProfileView from "@/views/ProfileView.vue";
 
 /* after navigation on small screens, close the nav drawer */
 const breakpoints = useBreakpoints(breakpointsTailwind);
@@ -20,7 +21,8 @@ onMounted(() => {
 <template>
   <div>
     <Navbar/>
-    <GridContent />
+    <GridContent v-if="route.name === 'home'" />
+    <ProfileView v-if="route.name === 'profile'" />
     <AppFooter />
   </div>
 
