@@ -108,6 +108,86 @@ export const useCartStore = defineStore("cart", () => {
       }).filter((item: null) => item !== null); // Remove any null entries
     }
   }
+  // Checkout function to create an order and clear the cart
+  async function checkout() {
+    if (!user.value) return;
+  
+    try {
+      // ✅ Correct total price calculation
+      const totalPrice = cartItems.value.reduce((sum, item) => {
+        return sum + item.price * item.quantity;
+      }, 0);
+  
+      // ✅ Fetch shipping address from user_address table
+      const { data: addressData, error: addressError } = await supabase
+        .from("user_address")
+        .select("address_id")
+        .eq("user_id", user.value.id)
+        .single();
+      
+      console.log(addressData);
+      if (addressError) throw addressError;
+  
+      const shippingAddress = addressData?.address_id || "No address provided";
+  
+      // ✅ Insert new order with all required fields including order_total
+    const { data: order, error: orderError } = await supabase
+    .from("order")
+    .insert([
+      {
+        user_id: user.value.id,
+        paid: totalPrice,           // Total price of the order
+        order_total: 1,    // ✅ Added order_total field
+        order_status: "pending",    // Order status
+        order_date: new Date(),     // Current date/time
+        shipping_address: shippingAddress, // Fetched from user_address
+        gift_shipping_address_id: 1,       // Set as false
+        is_gift: false,             // Set as false
+      },
+    ])
+    .select("order_id")
+    .single();
+
+  
+      if (orderError) throw orderError;
+  
+      const orderId = order.order_id;
+  
+      // // ✅ Insert order items
+      // const { error: orderItemsError } = await supabase
+      //   .from("order_items")
+      //   .insert(
+      //     cartItems.value.map((item) => ({
+      //       order_id: orderId,
+      //       product_id: item.product_id,
+      //       quantity: item.quantity,
+      //       price: item.price,
+      //     }))
+      //   );
+  
+      // if (orderItemsError) throw orderItemsError;
+  
+      // ✅ Clear the cart
+      console.log("Order ID:", orderId);
+      console.log("Cart Items:", cartItems.value);
+
+      const { error: clearCartError } = await supabase
+        .from("cart")
+        .delete()
+        .eq("user_id", user.value.id);
+  
+      if (clearCartError) throw clearCartError;
+  
+      cartItems.value = [];
+      console.log("Checkout successful!");
+  
+    } catch (error) {
+      console.error("Error during checkout:", error);
+    }
+  }
+  
+  
+
   
 
   // Toggle the cart's visibility
@@ -125,5 +205,6 @@ export const useCartStore = defineStore("cart", () => {
     removeItem,
     loadCartFromSupabase,
     toggleCartVisibility,
+    checkout
   };
 });

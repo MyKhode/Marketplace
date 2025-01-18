@@ -131,7 +131,7 @@ function toggleCart() {
         </svg>
       </button>
       <div class="flex items-center space-x-2 lg:ml-auto">
-        <button v-if="(['/product/'].some(path => $route.path.startsWith(path)))" @click="toggleCart" class="ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
+        <button v-if="(['/', '/product/,'].some(path => $route.path.startsWith(path)))" @click="toggleCart" class="ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
           <i class="fa-solid fa-cart-arrow-down"></i> &nbsp;
           <div class="hidden lg:block">Cart</div> ({{ cartStore.cartItems.length }})
         </button>
