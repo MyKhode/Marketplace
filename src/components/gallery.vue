@@ -18,7 +18,7 @@ async function fetchProductDetails() {
   try {
     const { data: productData, error: productError } = await supabase
       .from("product")
-      .select("product_id, title, price, discount, content, seller_id, image_overview_id")
+      .select("product_id, title, price, discount, stock, content, seller_id, image_overview_id")
       .eq("product_id", route.params.id)
       .single();
 
@@ -30,7 +30,7 @@ async function fetchProductDetails() {
       .select("fullname")
       .eq("id", productData.seller_id)
       .single();
-    
+
     const { data: cartData, error: cartError } = await supabase
       .from("cart")
       .select("*")
@@ -39,7 +39,7 @@ async function fetchProductDetails() {
 
     if (sellerError) throw sellerError;
     seller.value = sellerData?.fullname || "Unknown Seller";
-   
+
     cartStore.setSellerId(productData.seller_id);
     cartStore.loadCartFromSupabase(productData.seller_id);
 
@@ -73,6 +73,7 @@ function addCartButton() {
   }
 }
 
+
 onMounted(() => {
   fetchProductDetails();
 });
@@ -93,24 +94,31 @@ onMounted(() => {
       <p class="text-[#a1a1a1] max-w-96 mb-5">
         {{ product.content }}
       </p>
-      <div class="flex justify-between mb-6 lg:flex-col">
-        <div class="flex items-center">
-          <p class="text-2xl font-bold me-3">${{ product.price - product.discount }}</p>
-          <a v-if="product.discount" class="bg-[#ff7d1a33] text-sm px-2 rounded-md">{{ (((product.price - (product.price-product.discount))/product.price) * 100).toFixed(2) }}%</a>
+      <div class="flex justify-between">
+        <div class="flex justify-between mb-6 lg:flex-col">
+          <div class="flex items-center">
+            <p class="text-2xl font-bold me-3">${{ product.price - product.discount }}</p>
+            <a v-if="product.discount" class="bg-[#ff7d1a33] text-sm px-2 rounded-md">{{ (((product.price -
+              (product.price - product.discount)) / product.price) * 100).toFixed(2) }}%</a>
+          </div>
+          <del v-if="product.discount" class="text-[#a1a1a1] "> ${{ product.price.toFixed(2) }}</del>
         </div>
-        <del v-if="product.discount" class="text-[#a1a1a1]">  ${{  product.price.toFixed(2) }}</del>
+        <div class="text-left mt-5"><span class="text-sm text-green-600">Stock</span> <span class="text-md text-gray-600"> {{
+          product.stock }}</span></div>
       </div>
       <div class="lg:flex lg:justify-between">
-        <div class="quantity flex w-full h-12 lg:w-32 bg-[var(--color-background-mute)] rounded-md justify-between items-center mb-3">
-          <button @click="quantity > 0 ? quantity-- : quantity = 0">
+        <div
+          class="quantity flex w-full h-12 lg:w-32 bg-[var(--color-background-mute)] rounded-md justify-between items-center mb-3">
+          <button @click="quantity > 0 && quantity < product.stock ? quantity-- : quantity = 0">
             -
           </button>
           <p>{{ quantity }}</p>
-          <button @click="quantity++">
+          <button @click="quantity < product.stock ? quantity++ : quantity = product.stock">
             +
           </button>
         </div>
-        <button @click="addCartButton" class="w-50 shadow-2xl lg:w-60 h-12 w-full flex justify-center items-center bg-[#ff7d1a] text-white rounded-md ml-10 hover:bg-[#ff7d1a80]">
+        <button @click="addCartButton"
+          class="w-50 shadow-2xl lg:w-60 h-12 w-full flex justify-center items-center bg-[#ff7d1a] text-white rounded-md ml-10 hover:bg-[#ff7d1a80]">
           <p class="m-3 text-lg">
             <i class="fa-solid fa-cart-plus"></i> Add to cart
           </p>

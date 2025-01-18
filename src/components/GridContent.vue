@@ -18,7 +18,7 @@ export default {
       loading.value = true;
       const { data: productData, error: productError } = await supabase
         .from("product")
-        .select("product_id, title, price, discount, thumbnail, category_id");
+        .select("product_id, title, price, discount, stock, thumbnail, category_id");
 
       const { data: categoryData, error: categoryError } = await supabase
         .from("product_category")
@@ -35,6 +35,7 @@ export default {
             name: product.title,
             price: product.price,
             discount: product.discount,
+            stock: product.stock,
             image: product.thumbnail,
             category: category ? category.name : "other"
           };
@@ -143,15 +144,19 @@ export default {
                   {{ product.name }}
                 </h2>
                 <p class="text-orange-500 text-sm mb-2 capitalize">{{ product.category }}</p>
-                <div class="flex items-center">
-                  <p class="text-lg font-semibold text-black cursor-auto my-3">
-                    ${{ product.price - product.discount.toFixed(2) }}
-                  </p>
-                  <del v-if="product.discount">
-                    <p class="text-sm text-gray-600 cursor-auto ml-2">
-                      ${{ product.price.toFixed(2) }}
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <p class="text-lg font-semibold text-black cursor-auto my-3">
+                      ${{ product.price - product.discount.toFixed(2) }}
                     </p>
-                  </del>
+                    <del v-if="product.discount">
+                      <p class="text-sm text-gray-600 cursor-auto ml-2">
+                        ${{ product.price.toFixed(2) }}
+                      </p>
+                    </del>
+                  </div>
+                  
+                  <div><span class="text-sm text-green-600">Stock</span> <span class="text-md text-gray-600"> {{ product.stock }}</span></div>
                 </div>
               </div>
             </router-link>

@@ -3,6 +3,8 @@ import { useCartStore } from "@/stores/cartStore";
 
 const cartStore = useCartStore();
 
+// Call checkout on button click
+
 onMounted(() => {
   cartStore.loadCartFromSupabase(); // Load cart data from Supabase
 });
@@ -50,7 +52,7 @@ onMounted(() => {
             </div>
           </div>
           <!-- Checkout button -->
-          <button
+          <button @click="cartStore.checkout()"
             class="bg-orange-500 w-full h-12 mt-4 text-sm text-white rounded-lg hover:bg-orange-600"
           >
             Checkout
