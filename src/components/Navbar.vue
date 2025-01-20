@@ -16,7 +16,7 @@ const cartStore = useCartStore();
 
 function toggleCart() {
   cartStore.toggleCartVisibility();
-  console.log(cartStore.toggleCart);
+  console.log(cartStore.isCartVisible);
 }
 
 // Log user metadata on component mount
@@ -31,7 +31,7 @@ function toggleCart() {
 </script>
 
 <template>
-  <cart v-if="cartStore.toggleCart" />
+  <cart v-if="cartStore.isCartVisible" />
   
   <nav
     class="fixed top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
