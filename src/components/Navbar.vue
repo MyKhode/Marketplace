@@ -135,7 +135,7 @@ function toggleCart() {
           <i class="fa-solid fa-cart-arrow-down"></i> &nbsp;
           <div class="hidden lg:block">Cart</div> ({{ cartStore.cartItems.length }})
         </button>
-        <router-link to="/profile">
+        <router-link :to="`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`">
           <img aria-expanded="false" aria-haspopup="menu" id=":RlH2:" :src="avatar_url " alt="profile-picture"
           class="group inline-block h-8 w-8 rounded border border-stone-800 object-cover object-center p-0.5 outline-none" />
         </router-link>

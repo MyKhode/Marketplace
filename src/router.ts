@@ -110,6 +110,12 @@ const router = createRouter({
       component: () => import("@/components/gallery.vue"), // Dynamic component
       props: true, // Pass route params as props
     },    
+    {
+      path: "/profile/:id", // Dynamic route
+      name: "Profile",
+      component: () => import("@/views/ProfileView.vue"), // Dynamic component
+      props: true, // Pass route params as props
+    },    
     // {
     //   path: "/user", // Dynamic route
     //   name: "profile",

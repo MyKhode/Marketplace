@@ -85,9 +85,9 @@ onMounted(() => {
   <div class="lg:flex lg:justify-center gap-28 lg:items-center mx-auto lg:mt-0 mt-10 h-full w-1/2">
     <lightbox :images="images" />
     <div class="text-left">
-      <h1 class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2 ">
+      <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`" class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2">
         {{ seller }}
-      </h1>
+      </router-link>
       <h2 class="text-2xl font-bold w-90 mb-3 lg:mb-6">
         {{ product.title }}
       </h2>
