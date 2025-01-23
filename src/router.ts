@@ -144,6 +144,11 @@ supabase.auth.onAuthStateChange((event: string) => {
         return router.push({ name: "home" });
       }, 0);
     }
+    if(routeName == "signIn") {
+      setTimeout(() => {
+        return router.push({ name: "home" });
+      }, 0);
+    }
   }
 });
 
