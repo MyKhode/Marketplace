@@ -111,6 +111,12 @@ const router = createRouter({
       props: true, // Pass route params as props
     },    
     {
+      path: "/checkout", // Dynamic route
+      name: "checkout",
+      component: () => import("@/components/Checkout.vue"), // Dynamic component
+      props: true, // Pass route params as props
+    },    
+    {
       path: "/profile/:id", // Dynamic route
       name: "Profile",
       component: () => import("@/views/ProfileView.vue"), // Dynamic component
@@ -126,7 +132,7 @@ const router = createRouter({
 });
 
 const { supabase } = useAuthStore(pinia);
-supabase.auth.onAuthStateChange((event) => {
+supabase.auth.onAuthStateChange((event: string) => {
   console.log(event);
   if (event == "SIGNED_OUT") return router.push("/signin");
   if (event == "SIGNED_IN") {

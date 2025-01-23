@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useCartStore } from "../stores/cartStore";
 import cart from "./cart.vue";
 // import router from "@/router";
@@ -18,6 +18,12 @@ function toggleCart() {
   cartStore.toggleCartVisibility();
   console.log(cartStore.isCartVisible);
 }
+const openCart = () => {
+  cartStore.isCartVisible = true;
+};
+onMounted(() => {
+  cartStore.loadCartFromSupabase(); // Load cart data from Supabase
+});
 
 // Log user metadata on component mount
 // onMounted(() => {
@@ -131,7 +137,7 @@ function toggleCart() {
         </svg>
       </button>
       <div class="flex items-center space-x-2 lg:ml-auto">
-        <button v-if="(['/', '/product/,'].some(path => $route.path.startsWith(path)))" @click="toggleCart" class="ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
+        <button ref="{{cartStore.cartRef}}" v-if="(['/', '/product/,'].some(path => $route.path.startsWith(path)))" @click="toggleCart" class="cart-toggle-btn ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
           <i class="fa-solid fa-cart-arrow-down"></i> &nbsp;
           <div class="hidden lg:block">Cart</div> ({{ cartStore.cartItems.length }})
         </button>

@@ -22,7 +22,7 @@ onMounted(() => {
   <div>
     <Navbar/>
     <GridContent v-if="route.name === 'home'" />
-    <ProfileView v-if="route.name === 'profile'" />
+    <!-- <ProfileView v-if="route.name === 'profile'" /> -->
     <!-- <Gallery v-if="route.name === 'product'" /> -->
     <AppFooter />
   </div>

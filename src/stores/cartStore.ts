@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, onMounted } from "vue";
 import { supabase } from "@/services/supabase";
+import cart from "./cart.vue";
 import { User } from "@supabase/supabase-js";
 
 interface CartItem {
@@ -21,6 +22,7 @@ export const useCartStore = defineStore("cart", () => {
   );
   const cartItems = ref<CartItem[]>([]);
   const isCartVisible = ref<boolean>(false);
+  const cartRef = ref(null);
   const sellerId = ref<string>("");
 
   onMounted(() => {
@@ -129,7 +131,7 @@ export const useCartStore = defineStore("cart", () => {
   
       // Insert all cart items into the order table
       const orderRecords = cartItems.value.map((item) => ({
-        user_id: user.value.id,
+        user_id: user?.value?.id,
         product_id: item.product_id,
         // title: item.title,
         price: item.price,
@@ -185,5 +187,6 @@ export const useCartStore = defineStore("cart", () => {
     loadCartFromSupabase,
     toggleCartVisibility,
     checkout,
+    cartRef,
   };
 });
