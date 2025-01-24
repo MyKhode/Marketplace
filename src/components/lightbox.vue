@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from "vue";
 
+// Props for passing the images array
 const props = defineProps({
   images: {
     type: Array,
@@ -8,70 +9,80 @@ const props = defineProps({
   },
 });
 
+// State to track the current image index
 const currentIndex = ref(0);
-const defPro = ref(props.images[currentIndex.value]);
 
-// Watch for changes in props.images to update default product
+// State for the currently displayed image
+const displayedImage = ref(props.images[currentIndex.value]);
+
+// Watch for changes in the images array to update the displayed image
 watch(
   () => props.images,
   (newImages) => {
     if (newImages.length > 0) {
-      defPro.value = newImages[currentIndex.value];
+      displayedImage.value = newImages[currentIndex.value];
     }
   },
-  { immediate: true } // This ensures it runs on initialization
+  { immediate: true }
 );
 
-function changePro(index) {
+// Function to change the displayed image
+function changeImage(index) {
   currentIndex.value = index;
-  defPro.value = props.images[currentIndex.value];
+  displayedImage.value = props.images[currentIndex.value];
 }
 </script>
 
 <template>
-  <div class="mb-5">
-    <div class="relative">
-      <!-- Wrapper div instead of a button -->
-      <div @click="pressed = !pressed">
-        <!-- Left arrow button -->
-        <button 
-          class="absolute left-3 top-1/2 -translate-y-1/2 rotate-180 lg:hidden opacity-70 hover:opacity-80" 
-          @click.stop="changePro((currentIndex - 1 + product_src.length) % product_src.length)"
-        >
-          <div class="bg-white px-3 py-2.5 rounded-full">
-            <img src="/images/icon-next.svg" class="w-2.5" alt="icon-next" />
-          </div>
-        </button>
-        <!-- Product image -->
-        <img 
-          :src="defPro" 
-          class="w-96 h-96 object-cover rounded-lg lg:rounded-xl lg:mb-6 cursor-auto lg:cursor-pointer" 
-          alt="product" 
-        />
-        <!-- Right arrow button -->
-        <button 
-          class="absolute right-3 top-1/2 -translate-y-1/2 lg:hidden opacity-70 hover:opacity-80" 
-          @click.stop="changePro((currentIndex + 1) % product_src.length)"
-        >
-          <div class="bg-white px-3 py-2.5 rounded-full">
-            <img src="/images/icon-next.svg" class="w-2.5" alt="icon-next" />
-          </div>
-        </button>
-      </div>
+  <div class="product-cart flex flex-col items-center lg:items-start">
+    <!-- Main Image Section -->
+    <div class="relative w-full px-1 py-4 max-w-lg">
+      <!-- Left Arrow -->
+      <button
+        class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-200 lg:hidden"
+        @click.stop="changeImage((currentIndex - 1 + props.images.length) % props.images.length)"
+      >
+        <img src="/images/icon-previous.svg" alt="Previous" class="w-4 h-4" />
+      </button>
+
+      <!-- Main Product Image -->
+      <img
+        :src="displayedImage"
+        class="w-full h-96 object-cover rounded-md shadow-md cursor-pointer"
+        alt="Main Product"
+      />
+
+      <!-- Right Arrow -->
+      <button
+        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-200 lg:hidden"
+        @click.stop="changeImage((currentIndex + 1) % props.images.length)"
+      >
+        <img src="/images/icon-next.svg" alt="Next" class="w-4 h-4" />
+      </button>
     </div>
-    <!-- Thumbnail navigation -->
-    <div class="thumbs hidden lg:block w-96 lg:flex lg:justify-between">
-      <div v-for="(product, index) in props.images" :key="index">
-        <button @click="changePro(index)">
+
+    <!-- Thumbnail Navigation -->
+    <div
+      class="thumbnails mt-4 grid grid-cols-4 gap-2 lg:flex lg:justify-start lg:gap-4 w-full max-w-lg"
+    >
+      <div
+        v-for="(image, index) in props.images"
+        :key="index"
+        class="thumbnail-wrapper"
+      >
+        <button
+          @click="changeImage(index)"
+          class="outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+        >
           <img
-            :src="product"
-            class="w-20 h-20 object-cover rounded-md hover:opacity-80"
+            :src="image"
             :class="[
-              product === defThumb
-                ? 'opacity-70 ring-2 ring-[var(--orange)]'
-                : 'opacity-100',
+              'w-20 h-20 rounded-md object-cover border-2 transition-opacity',
+              index === currentIndex.value
+                ? 'border-orange-500 opacity-70'
+                : 'border-gray-200 hover:opacity-80',
             ]"
-            :alt="'product-' + (index + 1) + '-thumb'"
+            :alt="'Thumbnail ' + (index + 1)"
           />
         </button>
       </div>
@@ -79,4 +90,14 @@ function changePro(index) {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.product-cart {
+  width: 100%;
+}
+
+.thumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+</style>

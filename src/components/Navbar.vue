@@ -40,7 +40,7 @@ onMounted(() => {
   <cart v-if="cartStore.isCartVisible" />
   
   <nav
-    class="fixed top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
+    class="fixed absolute sticky top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl  overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
     <div class="flex items-center">
       <router-link to="/" class="ml-2 mr-2 block py-1 font-sans text-sm font-semibold text-current antialiased">Marketplace</router-link>
       <hr class="border-secondary-dark mx-1 hidden h-5 w-px border-l border-t-0 lg:block" />
@@ -73,7 +73,7 @@ onMounted(() => {
               </span>
             </li>
           </button>
-          <router-link to="/profile">
+          <router-link :to="`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`">
             <a href="#"
               class="aria-disabled:opacity-50 aria-disabled:pointer-events-none dark:hover:text-white dark:focus:text-white dark:data-[selected=true]:text-white dark:bg-opacity-70 flex select-none items-center rounded-md bg-transparent py-1.5 px-2.5 align-middle font-sans text-stone-600 transition-all duration-300 ease-in hover:bg-stone-200 hover:text-stone-800 focus:bg-stone-200 focus:text-stone-800">
               <span class="me-2.5 mr-1.5 grid shrink-0 place-items-center"><svg width="1.5em" height="1.5em"
@@ -134,7 +134,7 @@ onMounted(() => {
           <path d="M3 5H21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
           <path d="M3 12H21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
           <path d="M3 19H21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
-        </svg>
+        </svg>              
       </button>
       <div class="flex items-center space-x-2 lg:ml-auto">
         <button ref="{{cartStore.cartRef}}" v-if="(['/', '/product/,'].some(path => $route.path.startsWith(path)))" @click="toggleCart" class="cart-toggle-btn ml-2 flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">

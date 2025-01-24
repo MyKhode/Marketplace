@@ -276,7 +276,7 @@ export default {
       <div
         v-for="(product, index) in filteredProducts"
         :key="index"
-        class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-white p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
+        class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
         @click="handleClick(product)"
         @dblclick="handleDoubleClick(product)"
       >

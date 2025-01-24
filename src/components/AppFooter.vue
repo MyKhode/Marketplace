@@ -1,6 +1,6 @@
 <template>
 
-<footer class="relative w-full">
+<footer class="relative w-full md:mt-0 mt-10 md:text-left text-center">
   <div class="mx-auto w-full max-w-7xl px-8">
     <div class="mx-auto grid w-full grid-cols-1 gap-8 py-12 md:grid-cols-2 lg:grid-cols-4">
       <ul>
