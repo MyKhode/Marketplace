@@ -19,7 +19,7 @@ async function fetchProductDetails() {
     const { data: productData, error: productError } = await supabase
       .from("product")
       .select("product_id, title, price, discount, stock, content, seller_id, image_overview_id")
-      .eq("product_id", route.params.id)
+      .eq("product_id", parseInt(route.params.id))
       .single();
 
     if (productError) throw productError;
@@ -34,8 +34,8 @@ async function fetchProductDetails() {
     const { data: cartData, error: cartError } = await supabase
       .from("cart")
       .select("*")
-      .eq("user_id", supabase.auth.user().id)
-      .eq("seller_id", productData.seller_id);
+      .eq("user_id", supabase.auth.user().id);
+      // .eq("seller_id", productData.seller_id);
 
     if (sellerError) throw sellerError;
     seller.value = sellerData?.fullname || "Unknown Seller";
@@ -49,19 +49,19 @@ async function fetchProductDetails() {
       .eq("id", productData.image_overview_id);
 
     if (imagesError) throw imagesError;
+
     const { image1, image2, image3, image4 } = imagesData[0];
     images.value = [image1, image2, image3, image4]; // Store all images
   } catch (error) {
     console.error("Error fetching product details:", error);
   }
+
 }
 
 // Watch for route changes and refetch product details
 watch(() => route.params.id, fetchProductDetails, { immediate: true });
 
 function addCartButton() {
-  const discountedPrice = parseInt(product.value.price) - parseInt(product.value.discount);
-  console.log("discountedPrice:", discountedPrice);
   if (quantity.value > 0) {
     const item = {
       product_id: product.value.product_id,

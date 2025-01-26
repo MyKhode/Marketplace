@@ -30,57 +30,48 @@ export default {
     // 2. Fetch Products Function
     const fetchProducts = async () => {
       loading.value = true;
-      const { data: productData, error: productError } = await supabase
+      const { data: productData } = await supabase
         .from("product")
         .select(
           "product_id, title, price, discount, stock, thumbnail, category_id"
         );
 
-      const { data: categoryData, error: categoryError } = await supabase
+      const { data: categoryData } = await supabase
         .from("product_category")
         .select("category_id, name");
 
-      if (productError || categoryError) {
-        console.error("Error fetching data:", productError || categoryError);
-      } else {
-        categories.value = [
-          "all",
-          ...categoryData.map((category) => category.name),
-        ];
-        products.value = productData.map((product) => {
-          const category = categoryData.find(
-            (cat) => cat.category_id === product.category_id
-          );
-          return {
-            id: product.product_id,
-            name: product.title,
-            price: product.price,
-            discount: product.discount,
-            stock: product.stock,
-            image: product.thumbnail,
-            category: category ? category.name : "other",
-          };
-        });
-      }
+      categories.value = [
+        "all",
+        ...categoryData.map((category) => category.name),
+      ];
+      products.value = productData.map((product) => {
+        const category = categoryData.find(
+          (cat) => cat.category_id === product.category_id
+        );
+        return {
+          id: product.product_id,
+          name: product.title,
+          price: product.price,
+          discount: product.discount,
+          stock: product.stock,
+          image: product.thumbnail,
+          category: category ? category.name : "other",
+        };
+      });
       loading.value = false;
     };
 
     const fetchWishlist = async () => {
-      const { data: wishlistData, error: wishlistError } = await supabase
+      const { data: wishlistData } = await supabase
         .from("users")
         .select("wishlist")
         .eq("id", supabase.auth.user().id)
         .single();
 
-      if (wishlistError) {
-        console.error("Error fetching wishlist:", wishlistError);
-      } else {
-        try {
-          wishlist.value = JSON.parse(wishlistData.wishlist || "[]"); // Parse JSON string
-        } catch (e) {
-          console.error("Error parsing wishlist:", e);
-          wishlist.value = [];
-        }
+      try {
+        wishlist.value = JSON.parse(wishlistData.wishlist || "[]"); // Parse JSON string
+      } catch (e) {
+        wishlist.value = [];
       }
     };
 
@@ -158,11 +149,11 @@ export default {
 
       addToWishlist(product.id); // Toggle the wishlist
 
-      console.log(
-        wishlist.value.includes(product.id)
-          ? `Product ${product.name} added to wishlist`
-          : `Product ${product.name} removed from wishlist`
-      );
+      // console.log(
+      //   wishlist.value.includes(product.id)
+      //     ? `Product ${product.name} added to wishlist`
+      //     : `Product ${product.name} removed from wishlist`
+      // );
 
       setTimeout(() => {
         notification.value = false;
@@ -191,7 +182,7 @@ export default {
 
 <template>
   <div id="app"
-    class="mx-auto mt-20 grid min-h-screen max-w-screen-lg grid-cols-12 place-content-center items-center gap-x-3 px-5 py-10">
+    class="mx-auto md:mt-20 grid min-h-screen max-w-screen-lg grid-cols-12 place-content-center items-center gap-x-3 px-5 py-10">
     <h1 class="col-span-12 mb-5 text-left text-3xl font-bold capitalize">
       Shop by Category
     </h1>
@@ -238,7 +229,7 @@ export default {
       <div v-for="(product, index) in filteredProducts" :key="index"
         class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
         @click="handleClick(product)" @dblclick="handleDoubleClick(product)">
-        <img :src="product.image" :alt="product.name" class="h-48 w-full rounded-lg object-cover" />
+        <img :src="product.image" :alt="product.name" class=" md:h-58 h-58 w-full rounded-lg object-cover" />
         <div class="mt-3 text-left">
           <div class="flex justify-end">
             <i class="fa-regular fa-heart" :class="wishlist.some((id) => id.includes(product.id))

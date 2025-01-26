@@ -12,4 +12,3 @@ app.provide(isDarkKey, isDark);
 
 app.use(router).use(pinia);
 app.mount("#app");
-

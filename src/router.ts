@@ -133,11 +133,11 @@ const router = createRouter({
 
 const { supabase } = useAuthStore(pinia);
 supabase.auth.onAuthStateChange((event: string) => {
-  console.log(event);
+  // console.log(event);
   if (event == "SIGNED_OUT") return router.push("/signin");
   if (event == "SIGNED_IN") {
     const routeName = router.currentRoute.value.name;
-    console.log("routeName", routeName);
+    // console.log("routeName", routeName);
 
     if (routeName == "callback") {
       setTimeout(() => {

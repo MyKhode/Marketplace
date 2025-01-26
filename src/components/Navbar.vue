@@ -16,7 +16,6 @@ const cartStore = useCartStore();
 
 function toggleCart() {
   cartStore.toggleCartVisibility();
-  console.log(cartStore.isCartVisible);
 }
 const openCart = () => {
   cartStore.isCartVisible = true;
@@ -42,7 +41,7 @@ onMounted(() => {
   <nav
     class="fixed absolute sticky top-0 left-0 right-0 z-10 shadow-stone-950/5 mx-auto w-full max-w-screen-xl  overflow-hidden rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
     <div class="flex items-center">
-      <router-link to="/" class="ml-2 mr-2 block py-1 font-sans text-sm font-semibold text-current antialiased">Marketplace</router-link>
+      <router-link to="/" class="ml-2 mr-2 block py-1 font-sans text-sm font-semibold text-current antialiased">Tinh25</router-link>
       <hr class="border-secondary-dark mx-1 hidden h-5 w-px border-l border-t-0 lg:block" />
       <div class="hidden lg:block">
         <ul class="min-w-60 mt-4 flex flex-col gap-1 lg:mt-0 lg:flex-row lg:items-center">

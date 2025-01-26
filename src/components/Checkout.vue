@@ -37,15 +37,15 @@ const abaPayUrlFetch = async () => {
       .eq("price", totalPrice);
 
     if (PaymentError) {
-      console.error("Error fetching payment data:", PaymentError.message);
+      // console.error("Error fetching payment data:", PaymentError.message);
       return;
     }
 
     if (PaymentData && PaymentData.length > 0) {
       abaPayUrl.value = PaymentData[0].aba_url;
-      console.log("Fetched ABA URL:", abaPayUrl.value);
+      // console.log("Fetched ABA URL:", abaPayUrl.value);
     } else {
-      console.warn("No payment data found.");
+      // console.warn("No payment data found.");
     }
   } catch (error) {
     console.error("Unexpected error during fetch:", error);
@@ -67,10 +67,10 @@ const validateTransaction = async () => {
       .single(); // Fetch a single transaction based on purchase_id
 
     if (error || !transactionData) {
-      console.error(
-        "Error fetching transaction or invalid transaction:",
-        error?.message
-      );
+      // console.error(
+      //   "Error fetching transaction or invalid transaction:",
+      //   error?.message
+      // );
       validationMessage.value = "Transaction not found or invalid!";
       return; // Stop further processing
     }
@@ -87,15 +87,15 @@ const validateTransaction = async () => {
     if (parseFloat(transactionData.purchase_price) === parseFloat(totalPrice)) {
       validationMessage.value = "Transaction validated successfully!";
       isValidTransaction.value = true;
-      console.log("Transaction is valid and matches the payment.");
+      // console.log("Transaction is valid and matches the payment.");
     } else {
       validationMessage.value =
         "Transaction amount does not match the total price!";
-      console.warn("Amount mismatch:", transactionData.amount, totalPrice);
+      // console.warn("Amount mismatch:", transactionData.amount, totalPrice);
       isValidTransaction.value = false;
     }
   } catch (err) {
-    console.error("Unexpected error during transaction validation:", err);
+    // console.error("Unexpected error during transaction validation:", err);
     validationMessage.value = "An error occurred during validation!";
   }
 };
@@ -109,19 +109,19 @@ const markTransactionAsUsed = async () => {
       .eq("purchase_id", trxId.value);
 
     if (error) {
-      console.error("Error updating transaction:", error.message);
+      // console.error("Error updating transaction:", error.message);
       validationMessage.value = "Failed to mark transaction as used!";
       return;
     }
 
     if (data) {
-      console.log("Transaction successfully, U can't use it again", data);
+      // console.log("Transaction successfully, U can't use it again", data);
       validationMessage.value =
         "Transaction successfully, U can't use it again";
       isTrxIdUsed.value = true; // Update local state
     }
   } catch (err) {
-    console.error("Unexpected error while updating transaction:", err);
+    // console.error("Unexpected error while updating transaction:", err);
     validationMessage.value =
       "An error occurred while updating the transaction!";
   }
@@ -134,7 +134,7 @@ const TransectionValidate = () => {
   if (!full_name.value || !phone.value || !address.value) {
     alert("Please fill in all the required fields.");
     validationMessage.value = "Please fill in all the required fields.";
-    console.log("Please fill in all the required fields.");
+    // console.log("Please fill in all the required fields.");
     return;
   }
   if (!trxId.value) {
@@ -157,19 +157,19 @@ const OpenAbaPay = () => {
 // };
 
 const ProceedToCheckout = async () => {
-  console.log("Proceed to checkout");
+  // console.log("Proceed to checkout");
 
   if (!isValidTransaction.value) return;
 
   try {
     await cartStore.checkout();
     await markTransactionAsUsed();
-    console.log("Checkout and transaction update successful.");
+    // console.log("Checkout and transaction update successful.");
     // route redirect to profile with user full name
     router.push(`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`);
 
   } catch (error) {
-    console.error("Error during checkout process:", error);
+    // console.error("Error during checkout process:", error);
   }
 
 };

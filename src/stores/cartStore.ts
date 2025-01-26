@@ -50,7 +50,8 @@ export const useCartStore = defineStore("cart", () => {
     });
 
     if (error) {
-      console.error("Error adding item to cart:", error);
+      // console.error("Error adding item to cart:", error);
+      console.error("Error adding item to cart:");
     } else {
       await loadCartFromSupabase();
     }
@@ -66,7 +67,8 @@ export const useCartStore = defineStore("cart", () => {
       .eq("cart_id", id);
 
     if (error) {
-      console.error("Error removing item from cart:", error);
+      // console.error("Error removing item from cart:", error);
+      console.error("Error removing item from cart:");
     } else {
       await loadCartFromSupabase();
     }
@@ -82,7 +84,8 @@ export const useCartStore = defineStore("cart", () => {
 
         
     if (error) {
-      console.error("Error loading cart:", error);
+      // console.error("Error loading cart:", error);
+      console.error("Error loading cart:");
       return;
     }
 
@@ -99,7 +102,7 @@ export const useCartStore = defineStore("cart", () => {
         seller_id: item.product.seller_id,
       })
       .filter(Boolean) as CartItem[];
-      console.log("cartItems -- :", cartItems.value);
+      // console.log("cartItems -- :", cartItems.value);
   };
   // console.log("value price:", cartItems.value[0].price);
 
@@ -110,8 +113,8 @@ export const useCartStore = defineStore("cart", () => {
     }
   
     try {
-      console.log("checkout, user:", user.value);
-      console.log("checkout, cartItems:", cartItems.value);
+      // console.log("checkout, user:", user.value);
+      // console.log("checkout, cartItems:", cartItems.value);
   
       const { data: addressData, error: addressError } = await supabase
         .from("user_address")
@@ -128,14 +131,6 @@ export const useCartStore = defineStore("cart", () => {
         (sum, item) => sum + item.price * item.quantity,
         0
       );
-  
-      console.log("totalPrice:", totalPrice);
-      console.log("order_date:", new Date());
-      console.log("address:", shippingAddress);
-      console.log("order_status:", "pending");
-      console.log("user_id:", user.value.id);
-      console.log("product_id:", cartItems.value.map((item) => item.product_id));
-  
       // Insert all cart items into the order table
       const orderRecords = cartItems.value.map((item) => ({
         user_id: user?.value?.id,
@@ -197,3 +192,4 @@ export const useCartStore = defineStore("cart", () => {
     cartRef,
   };
 });
+
