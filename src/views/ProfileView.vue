@@ -488,7 +488,7 @@ export default {
             v-for="(product, index) in filteredProducts"
             :key="index"
             v-else
-            class="col-span-12 h-full cursor-pointer gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
+            class="col-span-12 h-full px-5 cursor-pointer gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
           >
             <router-link :to="`/product/${product?.id}`" class="w-full">
               <img
@@ -555,14 +555,13 @@ export default {
                 />
                 <div>
                   <h3 class="font-medium">{{ order.product_title }}</h3>
-                  <p class="text-sm text-gray-500">
+                  <!-- <p class="text-sm text-gray-500 hidden sm:block">
                     Order ID:
                     <span class="text-blue-500 underline">{{
                       order?.order_id
                     }}</span>
-                  </p>
-                  <p class="text-sm text-gray-500">
-                    Meta Title:
+                  </p> -->
+                  <p class="text-sm text-gray-500 hidden sm:block">
                     <span class="text-blue-500">{{
                       order.meta_title.length > 50
                         ? order.meta_title.substring(0, 50) + "..."
@@ -571,18 +570,18 @@ export default {
                   </p>
                 </div>
               </div>
-              <div class="text-right">
+              <div class="text-right w-1/4">
                 <p class="font-semibold text-gray-800">
-                  ${{ order.total_price.toFixed(2) }}
+                  ${{ order.total_price.toFixed(2) }} * {{ order.quantity }}
                 </p>
                 <span
-                  class="rounded-full px-2 py-1 text-sm"
+                  class="text-sm text-right"
                   :class="{
-                    'bg-green-100 text-green-600':
+                    ' text-green-600':
                       order.order_status === 'shipped',
-                    'bg-yellow-100 text-yellow-600':
+                    'text-yellow-600':
                       order.order_status === 'pending',
-                    'bg-red-100 text-red-600':
+                    'text-red-600':
                       order.order_status === 'canceled',
                   }"
                 >
@@ -595,13 +594,14 @@ export default {
       </div>
       <!-- end order list -->
       <!-- start wishlist list -->
-      <div class="mx-auto flex max-w-4xl p-6 text-left">
+      <div
+      :class="{ hidden: activeTab !== 2 }"  
+      class="mx-auto flex max-w-4xl p-6 text-left gap-5">
         <div
           v-for="(product, index) in wishlist"
           :key="index"
-          class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
+          class="col-span-12 w-1/3 h-full cursor-pointer cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
           @click="handleClick(product)"
-          @dblclick="handleDoubleClick(product)"
         >
           <img
             :src="product.image"

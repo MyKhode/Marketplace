@@ -60,16 +60,18 @@ async function fetchProductDetails() {
 watch(() => route.params.id, fetchProductDetails, { immediate: true });
 
 function addCartButton() {
+  const discountedPrice = parseInt(product.value.price) - parseInt(product.value.discount);
+  console.log("discountedPrice:", discountedPrice);
   if (quantity.value > 0) {
     const item = {
       product_id: product.value.product_id,
       title: product.value.title,
       price: product.value.price,
+      discount: product.value.discount,
       thumbnail: product.value.thumbnail,
       quantity: quantity.value,
     };
     cartStore.addItem(item);
-    console.log("Item added to cart:", item);
   }
 }
 
@@ -86,7 +88,8 @@ onMounted(() => {
     <div class="lg:flex lg:justify-center gap-28 lg:items-center mx-auto lg:mt-28 h-full lg:w-1/2">
       <lightbox :images="images" />
       <div class="text-left lg:mt-0 mt-5 px-5">
-        <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`" class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2">
+        <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`"
+          class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2">
           {{ seller }}
         </router-link>
         <h2 class="text-2xl font-bold w-90 mb-3 lg:mb-6">
@@ -104,8 +107,9 @@ onMounted(() => {
             </div>
             <del v-if="product.discount" class="text-[#a1a1a1] mt-1 md:ml-0 ml-3"> ${{ product.price.toFixed(2) }}</del>
           </div>
-          <div class="text-left mb-5"><span class="text-sm text-green-600">Stock</span> <span class="text-md text-gray-600"> {{
-            product.stock }}</span></div>
+          <div class="text-left mb-5"><span class="text-sm text-green-600">Stock</span> <span
+              class="text-md text-gray-600"> {{
+                product.stock }}</span></div>
         </div>
         <div class="lg:flex lg:justify-between md:w-full w-1/2">
           <div

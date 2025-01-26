@@ -8,7 +8,9 @@ interface CartItem {
   cart_id: string;
   product_id: string;
   title: string;
+  meta_title: string;
   price: number;
+  discount: number;
   thumbnail: string;
   quantity: number;
   seller_id: string;
@@ -75,9 +77,10 @@ export const useCartStore = defineStore("cart", () => {
 
     const { data, error } = await supabase
       .from("cart")
-      .select(`cart_id, product_id, quantity, product:product_id (title, price, thumbnail, seller_id)`)
+      .select(`cart_id, product_id, quantity, product:product_id (title, price, discount, meta_title, thumbnail, seller_id)`)
       .eq("user_id", user.value.id);
 
+        
     if (error) {
       console.error("Error loading cart:", error);
       return;
@@ -87,14 +90,18 @@ export const useCartStore = defineStore("cart", () => {
       .map((item: any) => item.product && {
         cart_id: item.cart_id,
         product_id: item.product_id,
-        title: item.product.title,
-        price: parseFloat(item.product.price),
+        title: item.product.title, 
+        meta_title: item.product.meta_title,
+        price: item.product.price - item.product.discount,
+        discount: item.product.discount,
         thumbnail: item.product.thumbnail,
         quantity: item.quantity,
         seller_id: item.product.seller_id,
       })
       .filter(Boolean) as CartItem[];
+      console.log("cartItems -- :", cartItems.value);
   };
+  // console.log("value price:", cartItems.value[0].price);
 
   const checkout = async () => {
     if (!user.value || !user.value.id) {

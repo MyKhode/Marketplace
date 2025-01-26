@@ -43,7 +43,7 @@ onUnmounted(() => {
             <div class="text-start">
               <h3 class="text-sm"> {{ item.title }} {{ item.cart_id }}</h3>
               <p class="text-sm">
-                ${{ item.price.toFixed(2) }} x {{ item.quantity }}
+                ${{ item.price }} x {{ item.quantity }}
                 <strong class="text-black dark:text-white ms-1">
                   ${{ (item.price * item.quantity).toFixed(2) }}
                 </strong>
