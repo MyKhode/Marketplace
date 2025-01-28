@@ -117,16 +117,19 @@ export const useCartStore = defineStore("cart", () => {
       // console.log("checkout, cartItems:", cartItems.value);
   
       const { data: addressData, error: addressError } = await supabase
-        .from("user_address")
+        .from("users")
         .select("*")
-        .eq("user_id", user.value.id)
+        .eq("id", user.value.id)
         .single();
   
       if (addressError) throw new Error(`Failed to fetch address: ${addressError.message}`);
-      const shippingAddress = addressData
-        ? Object.values(addressData).join(", ")
-        : "No address provided";
+      // const shippingAddress = addressData
+      //   ? Object.values(addressData).join(", ")
+      //   : "No address provided";
   
+      const shippingAddress = addressData?.address || "No address provided";
+      const phone_number = addressData?.phone_number || "No phone number provided";
+      const full_name = addressData?.fullname || "No name provided";
       const totalPrice = cartItems.value.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
@@ -142,6 +145,8 @@ export const useCartStore = defineStore("cart", () => {
         order_status: "pending",
         order_date: new Date(),
         address: shippingAddress,
+        phone_number: phone_number,
+        full_name: full_name,
         // seller_id: item.seller_id,
         // thumbnail: item.thumbnail,
       }));

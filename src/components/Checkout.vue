@@ -7,7 +7,7 @@ import { useRouter } from "vue-router";
 import cart from "./cart.vue";
 import router from "@/router";
 
-const user =  supabase.auth.user() as User | null;
+const user = supabase.auth.user() as User | null;
 const metadata = ref(user?.user_metadata || {});
 
 
@@ -127,70 +127,115 @@ const markTransactionAsUsed = async () => {
   }
 };
 
-// Trigger the validation on button click
-const TransectionValidate = () => {
-  // validate the input like, full name, phone, address
-
-  if (!full_name.value || !phone.value || !address.value) {
-    alert("Please fill in all the required fields.");
-    validationMessage.value = "Please fill in all the required fields.";
-    // console.log("Please fill in all the required fields.");
-    return;
-  }
-  if (!trxId.value) {
-    validationMessage.value = "Please enter a valid transaction ID!";
-    return;
-  }
-
-  validateTransaction();
-};
-
-// Open ABA Pay URL in a new tab
-const OpenAbaPay = () => {
-  if (abaPayUrl.value) {
-    window.open(abaPayUrl.value, "_blank");
-  }
-};
-
-// const TestFunction = async () => {
-//   console.log("Test");
-// };
-
-const ProceedToCheckout = async () => {
-  // console.log("Proceed to checkout");
-
-  if (!isValidTransaction.value) return;
-
+const initializeCheckoutInfo = async () => {
   try {
-    await cartStore.checkout();
-    await markTransactionAsUsed();
-    // console.log("Checkout and transaction update successful.");
-    // route redirect to profile with user full name
-    router.push(`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`);
+    const { data, error } = await supabase
+      .from("users")
+      .select("fullname, phone_number, address")
+      .eq("id", user?.id)
+      .single();
 
-  } catch (error) {
-    // console.error("Error during checkout process:", error);
+    if (error) {
+      console.error("Error fetching user data:", error.message);
+      return;
+    }
+
+    if (data) {
+      // console.log("User data fetched successfully:", data);
+      full_name.value = data.fullname;
+      phone.value = data.phone_number;
+      address.value = data.address;
+    }
+
+  } catch (err) {
+    console.error("Unexpected error while fetching user data:", err);
   }
-
 };
 
-// Run on mount
-onMounted(async () => {
-  try {
-    await cartStore.loadCartFromSupabase();
-    await abaPayUrlFetch();
-  } catch (error) {
-    console.error("Error during setup:", error);
-  }
-});
+  // Trigger the validation on button click
+  const TransectionValidate = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .update({ address: address.value, phone_number: phone.value })
+        .eq("id", user?.id);
 
-// Watch for cart changes
-watch(
-  () => cartStore.cartItems,
-  async () => {
-    await abaPayUrlFetch();
-  }
-);
+      if (error) {
+        // console.error("Error updating address and phone number:", error.message);
+        return;
+      }
+
+      if (data) {
+        // console.log("Address and phone number updated successfully:", data);
+        address.value = data[0].address;
+        phone.value = data[0].phone_number;
+      }
+    } catch (err) {
+      // console.error("Unexpected error while updating address and phone number:", err);
+    }
+    // validate the input like, full name, phone, address
+
+    if (!full_name.value || !phone.value || !address.value) {
+      alert("Please fill in all the required fields.");
+      validationMessage.value = "Please fill in all the required fields.";
+      // console.log("Please fill in all the required fields.");
+      return;
+    }
+    if (!trxId.value) {
+      validationMessage.value = "Please enter a valid transaction ID!";
+      return;
+    }
+
+    validateTransaction();
+  };
+
+  // Open ABA Pay URL in a new tab
+  const OpenAbaPay = () => {
+    if (abaPayUrl.value) {
+      window.open(abaPayUrl.value, "_blank");
+    }
+  };
+
+  // const TestFunction = async () => {
+  //   console.log("Test");
+  // };
+
+  const ProceedToCheckout = async () => {
+    // console.log("Proceed to checkout");
+
+    if (!isValidTransaction.value) return;
+
+    try {
+      await cartStore.checkout();
+      await markTransactionAsUsed();
+      // console.log("Checkout and transaction update successful.");
+      // route redirect to profile with user full name
+      router.push(`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`);
+
+    } catch (error) {
+      // console.error("Error during checkout process:", error);
+    }
+
+  };
+
+  // Run on mount
+  onMounted(async () => {
+    try {
+      await initializeCheckoutInfo();
+      await cartStore.loadCartFromSupabase();
+      await abaPayUrlFetch();
+    } catch (error) {
+      console.error("Error during setup:", error);
+    }
+  });
+
+  // Watch for cart changes
+  watch(
+    () => cartStore.cartItems,
+    async () => {
+      await abaPayUrlFetch();
+    }
+  );
 </script>
 
 <template>
@@ -203,11 +248,7 @@ watch(
           class="after:border-1 dark:text-primary-500 dark:after:border-gray-700 flex items-center text-primary-700 after:mx-6 after:hidden after:h-1 after:w-full after:border-b after:border-gray-200 sm:after:inline-block sm:after:content-[''] md:w-full xl:after:mx-10">
           <span
             class="dark:after:text-gray-500 flex items-center after:mx-2 after:text-gray-200 after:content-['/'] sm:after:hidden">
-            <svg class="me-2 h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
-              height="24" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8.5 11.5 11 14l4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
+            <i class="fa-regular fa-circle-check mr-2"></i>
             Cart
           </span>
         </li>
@@ -216,21 +257,16 @@ watch(
           class="after:border-1 dark:text-primary-500 dark:after:border-gray-700 flex items-center text-primary-700 after:mx-6 after:hidden after:h-1 after:w-full after:border-b after:border-gray-200 sm:after:inline-block sm:after:content-[''] md:w-full xl:after:mx-10">
           <span
             class="dark:after:text-gray-500 flex items-center after:mx-2 after:text-gray-200 after:content-['/'] sm:after:hidden">
-            <svg class="me-2 h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
-              height="24" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8.5 11.5 11 14l4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-            Checkout Details
+            <i class="fa-regular fa-circle-check mr-2"></i>
+            Fill_Form
           </span>
         </li>
 
-        <li class="flex shrink-0 items-center">
-          <svg class="me-2 h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
-            height="24" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M8.5 11.5 11 14l4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
+        <li 
+        :class="{'text-primary-700': isValidTransaction}"
+        class="flex shrink-0 items-center " 
+        >
+          <i class="fa-regular fa-circle-check mr-2"></i>
           Proceed Checkout
         </li>
       </ol>
@@ -381,7 +417,7 @@ watch(
 
           <div class="space-y-3">
             <button v-if="isValidTransaction == false"
-              class="dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800 flex w-full items-center justify-center rounded-lg bg-gray-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300"
+              class="dark:bg-gray-600 cursor-not-allowed dark:hover:bg-gray-700 dark:focus:ring-gray-800 flex w-full items-center justify-center rounded-lg bg-gray-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300"
               disabled>
               Proceed to Checkout
             </button>
