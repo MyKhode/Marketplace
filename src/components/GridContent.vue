@@ -182,7 +182,7 @@ export default {
 
 <template>
   <div id="app"
-    class="mx-auto md:mt-20 grid min-h-screen max-w-screen-lg grid-cols-12 place-content-center items-center gap-x-3 px-5 py-10">
+    class="mx-auto md:mt-20 mt-10 grid min-h-screen max-w-screen-lg grid-cols-12 place-content-center items-center gap-x-3 px-5 py-10">
     <h1 class="col-span-12 mb-5 text-left text-3xl font-bold capitalize">
       Shop by Category
     </h1>
