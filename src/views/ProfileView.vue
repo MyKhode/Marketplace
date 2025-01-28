@@ -5,10 +5,10 @@ import { supabase } from "@/services/supabase";
 import SkeletonProduct from "@/components/SkeletonProduct.vue";
 import Navbar from "@/layouts/navbar.vue";
 import AppFooter from "@/components/AppFooter.vue";
-// import SuccessNotification from "./SuccessNotification.vue";
 
 export default {
   setup() {
+
     const activeCategory = ref("all");
     const categories = ref(["all"]);
     const products = ref([]);
@@ -23,6 +23,12 @@ export default {
     const wishlist = ref([]);
     const notification = ref(false);
     const activeTab = ref(0);
+
+    const full_name = ref("");
+    const bio = ref("");
+    const phone = ref("");
+    const address = ref("");
+
 
     const setActiveTab = (index) => {
       activeTab.value = index;
@@ -253,6 +259,63 @@ export default {
         notification.value = false;
       }, 1000);
     };
+    const initializeCheckoutInfo = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("fullname, phone_number, address, bio")
+          .eq("id", supabase.auth.user().id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching user data:", error.message);
+          return;
+        }
+
+        if (data) {
+          // console.log("User data fetched successfully:", data);
+          full_name.value = data.fullname;
+          phone.value = data.phone_number;
+          address.value = data.address;
+          bio.value = data.bio;
+        }
+
+      } catch (err) {
+        console.error("Unexpected error while fetching user data:", err);
+      }
+    };
+
+    const saveInfo = async () => {
+      try {
+        const updates = {
+          fullname: full_name.value,
+          phone_number: phone.value,
+          address: address.value,
+          bio: bio.value,
+        };
+
+        const { data, error } = await supabase
+          .from("users")
+          .update(updates)
+          .eq("id", supabase.auth.user().id);
+
+        if (error) {
+          console.error("Error updating user data:", error.message);
+          return;
+        }
+
+        if (data) {
+          // console.log("User data updated successfully:", data);
+          Object.assign(full_name, { value: data[0].fullname });
+          Object.assign(phone, { value: data[0].phone_number });
+          Object.assign(address, { value: data[0].address });
+          Object.assign(bio, { value: data[0].bio });
+        }
+
+      } catch (err) {
+        console.error("Unexpected error while updating user data:", err);
+      }
+    };
 
     watch(
       () => route.params.id,
@@ -296,11 +359,12 @@ export default {
 
     onMounted(() => {
       fetchData();
+      initializeCheckoutInfo();
 
       if (activeTab.value === 1) {
-      if (supabase.auth.user()) {
-        fetchOrders();
-      }
+        if (supabase.auth.user()) {
+          fetchOrders();
+        }
       }
     });
 
@@ -323,6 +387,12 @@ export default {
       handleClick,
       handleDoubleClick,
       notification,
+      initializeCheckoutInfo,
+      full_name,
+      bio,
+      phone,
+      address,
+      saveInfo,
     };
   },
 };
@@ -338,9 +408,10 @@ export default {
 
         <!-- top header -->
         <div class="my-5 flex flex-col items-center justify-center">
-          <img v-if="users && users.meta" :src="users.meta.avatar_url" alt="User Avatar"
-            class="h-16 w-16 rounded-md bg-cover bg-center bg-no-repeat" />
-          <span class="my-3">@{{ users?.fullname }}</span>
+          <img
+            :src="users?.meta?.avatar_url || 'https://st.depositphotos.com/1779253/5140/v/450/depositphotos_51405259-stock-illustration-male-avatar-profile-picture-use.jpg'"
+            alt="User Avatar" class="h-16 w-16 rounded-md bg-cover bg-center bg-no-repeat" />
+          <span class="my-3">@{{ users?.fullname || 'Unknown' }}</span>
 
           <div class="flex gap-10 text-sm">
             <div class="flex flex-col items-center">
@@ -525,6 +596,19 @@ export default {
                 </span>
               </div>
             </div>
+            <div v-if="!orders || orders.length === 0">
+              <div class="p-4 text-center text-gray-500">
+                <p>
+                  You don't have any orders yet.
+                  <br />
+                  Once you've placed an order, it will appear here.
+                </p>
+                <router-link to="/"
+                  class="mt-4 inline-block rounded-lg bg-indigo-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                  Start Shopping
+                </router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -538,8 +622,8 @@ export default {
           <div class="mt-3 text-left">
             <div class="flex justify-end">
               <i class="fa-regular fa-heart" :class="wishlist.includes(product)
-                  ? 'fa-solid fa-heart text-[#63E6BE]'
-                  : 'text-gray-500'
+                ? 'fa-solid fa-heart text-[#63E6BE]'
+                : 'text-gray-500'
                 "></i>
             </div>
             <h2 class="truncate text-lg font-semibold">{{ product.name }}</h2>
@@ -567,6 +651,66 @@ export default {
       </div>
 
       <!-- end wishlist list -->
+      <!-- start user info profile list  -->
+      <div :class="{ hidden: activeTab !== 3 }"
+        class="mt-10 text-left gap-5 flex-wrap flex items-center justify-center">
+        <form>
+          <div class="grid gap-6 mb-6 md:grid-cols-2">
+            <div>
+              <label for="your_name" class="dark:text-white mb-2 block text-sm font-medium text-gray-900">
+                គោត្ដនាម, នាម
+              </label>
+              <input type="text" id="your_name" v-model="full_name"
+                class="dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
+                placeholder="John Doe" required />
+            </div>
+            <div>
+              <label for="your_name" class="dark:text-white mb-2 block text-sm font-medium text-gray-900">
+                ប្រវត្ដិសង្ខេប
+              </label>
+              <input type="text" id="your_name" v-model="bio"
+                class="dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
+                placeholder="John Doe" required />
+            </div>
+            <div>
+              <label for="phone-input-3" class="dark:text-white mb-2 block text-sm font-medium text-gray-900">
+                លេខទំនាក់ទំនង *
+              </label>
+              <div class="flex items-center">
+                <button id="dropdown-phone-button-3" data-dropdown-toggle="dropdown-phone-3"
+                  class="dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-700 z-10 inline-flex shrink-0 items-center rounded-s-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-100"
+                  type="button">
+                  <img class="me-2 h-4 w-6" src="/images/Flag_of_Cambodia.svg" alt="" />
+                  +855
+                  <svg class="-me-0.5 ms-2 h-4 w-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
+                    height="24" fill="none" viewBox="0 0 24 24">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="m19 9-7 7-7-7" />
+                  </svg>
+                </button>
+                <div class="relative w-full">
+                  <input type="text" id="phone-input" v-model="phone"
+                    class="dark:border-gray-600 dark:border-s-gray-700 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 z-20 block w-full rounded-e-lg border border-s-0 border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
+                    pattern="(0?[0-9]{2}[0-9]{3}[0-9]{4})" placeholder="964074300" required />
+                </div>
+              </div>
+            </div>
+            <div>
+              <label for="Address" class="dark:text-white mb-2 block text-sm font-medium text-gray-900">
+                ទីតាំង *</label>
+              <input type="text" id="Address" v-model="address"
+                class="dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
+                placeholder="ផ្លូវ, ភូមិ, ឃុំ, ស្រុក, ក្រុង, ខេត្ត" required />
+            </div>
+          </div>
+          <button type="button" @click="saveInfo()"
+            class="text-gray-900 bg-gradient-to-r from-lime-200 via-lime-400 to-lime-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-lime-300 dark:focus:ring-lime-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Save Info</button>
+        </form>
+
+
+      </div>
+      <!-- end user info profile list  -->
+
 
       <AppFooter />
     </div>
