@@ -158,8 +158,8 @@ export const useCartStore = defineStore("cart", () => {
         .from("order")
         .insert(orderRecords);
   
-      console.log("orderData:", orderData);
-      console.log("orderError:", orderError);
+      // console.log("orderData:", orderData);
+      // console.log("orderError:", orderError);
   
       if (orderError || !orderData) throw new Error(`Failed to create orders: ${orderError?.message}`);
   

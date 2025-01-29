@@ -28,6 +28,7 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const wishlist = ref([]);
+    const orders = ref([]);
 
     // 2. Fetch Products Function
     const fetchProducts = async () => {
@@ -99,6 +100,22 @@ export default {
 
       return !isProductInWishlist; // Return true if product was added, false if removed
     };
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("order")
+          .select("*");
+
+        if (error) {
+          console.error("Error fetching orders:", error.message);
+          return;
+        }
+
+        orders.value = data;
+      } catch (err) {
+        console.error("Unexpected error while fetching orders:", err);
+      }
+    };
 
     // Proper watch to track changes and react
     watch(wishlist, (newWishlist) => {
@@ -133,7 +150,7 @@ export default {
 
     // 6. Lifecycle Hook
     onMounted(() => {
-      fetchProducts(), fetchWishlist();
+      fetchProducts(), fetchWishlist(), fetchOrders();
     });
 
     // 7. Click Event Handler (Start)
@@ -184,6 +201,7 @@ export default {
       handleDoubleClick,
       wishlist,
       addToWishlist,
+      orders,
     };
   },
 };
@@ -264,8 +282,8 @@ export default {
               </del>
             </div>
             <div>
-              <span class="text-xs md:text-sm lg:text-base text-green-600">Stock</span>
-              <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ product.stock }}</span>
+              <span class="text-xs md:text-sm lg:text-base text-cyan-600">Sold </span>
+              <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ orders.filter(order => order.product_id === product.id).length }}</span>
             </div>
           </div>
         </div>

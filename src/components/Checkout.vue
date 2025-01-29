@@ -10,11 +10,9 @@ import router from "@/router";
 const user = supabase.auth.user() as User | null;
 const metadata = ref(user?.user_metadata || {});
 
-
 const cartStore = useCartStore();
 const abaPayUrl = ref<string | null>(null);
-const trxId = ref(""); // Store the entered transaction ID
-const validationMessage = ref<string | null>(null);
+const trxId = ref("");
 const isTrxIdUsed = ref<boolean>(false);
 const isValidTransaction = ref<boolean>(false);
 
@@ -22,8 +20,19 @@ const full_name = ref("");
 const phone = ref("");
 const address = ref("");
 
+const notification = ref(false);
+const notificationMessage = ref("");
+const typeNotification = ref("");
 
-// Fetch ABA Payway URL
+const setNotification = (message: string, type: string) => {
+  notificationMessage.value = message;
+  typeNotification.value = type;
+  notification.value = true;
+
+  setTimeout(() => {
+    notification.value = false;
+  }, 3000);
+};
 
 const abaPayUrlFetch = async () => {
   try {
@@ -36,94 +45,66 @@ const abaPayUrlFetch = async () => {
       .select("aba_url")
       .eq("price", totalPrice);
 
-    if (PaymentError) {
-      // console.error("Error fetching payment data:", PaymentError.message);
-      return;
-    }
+    if (PaymentError) return;
 
     if (PaymentData && PaymentData.length > 0) {
       abaPayUrl.value = PaymentData[0].aba_url;
-      // console.log("Fetched ABA URL:", abaPayUrl.value);
-    } else {
-      // console.warn("No payment data found.");
     }
   } catch (error) {
-    console.error("Unexpected error during fetch:", error);
+    setNotification("Unexpected error during fetch", "error");
   }
 };
 
-// Validate the transaction
 const validateTransaction = async () => {
-
   const totalPrice = cartStore.cartItems
     .reduce((total, product) => total + product.price, 0)
     .toFixed(2);
 
   try {
     const { data: transactionData, error } = await supabase
-      .from("transections") // Adjust the table name to match your database
+      .from("transections")
       .select("purchase_id, purchase_price, is_used")
       .eq("purchase_id", trxId.value)
-      .single(); // Fetch a single transaction based on purchase_id
+      .single();
 
     if (error || !transactionData) {
-      // console.error(
-      //   "Error fetching transaction or invalid transaction:",
-      //   error?.message
-      // );
-      validationMessage.value = "Transaction not found or invalid!";
-      return; // Stop further processing
+      setNotification("Transaction not found or invalid!", "error");
+      return;
     }
 
-    // Check if the transaction is already used
     if (transactionData.is_used) {
-      validationMessage.value =
-        "This transaction ID has already been used and cannot be reused.";
-      isTrxIdUsed.value = true; // Mark as already used
-      return; // Stop further processing
+      setNotification("This transaction ID has already been used!", "warning");
+      isTrxIdUsed.value = true;
+      return;
     }
 
-    // Compare the transaction amount with the total price
     if (parseFloat(transactionData.purchase_price) === parseFloat(totalPrice)) {
-      validationMessage.value = "Transaction validated successfully!";
+      setNotification("Transaction validated successfully!", "success");
       isValidTransaction.value = true;
-      // console.log("Transaction is valid and matches the payment.");
     } else {
-      validationMessage.value =
-        "Transaction amount does not match the total price!";
-      // console.warn("Amount mismatch:", transactionData.amount, totalPrice);
+      setNotification("Transaction amount does not match total price!", "error");
       isValidTransaction.value = false;
     }
   } catch (err) {
-    // console.error("Unexpected error during transaction validation:", err);
-    validationMessage.value = "An error occurred during validation!";
+    setNotification("An error occurred during validation!", "error");
   }
 };
 
-// Update the `is_used` field to `true`
 const markTransactionAsUsed = async () => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("transections")
       .update({ is_used: true })
       .eq("purchase_id", trxId.value);
 
     if (error) {
-      // console.error("Error updating transaction:", error.message);
-      validationMessage.value = "Failed to mark transaction as used!";
+      setNotification("Failed to mark transaction as used!", "error");
       return;
     }
-
-    if (data) {
-      // console.log("Transaction successfully, U can't use it again", data);
-      validationMessage.value =
-        "Transaction successfully, U can't use it again";
-      isTrxIdUsed.value = true; // Update local state
-    }
+    setNotification("Transaction successfully marked as used!", "success");
+    isTrxIdUsed.value = true;
   } catch (err) {
-    // console.error("Unexpected error while updating transaction:", err);
-    validationMessage.value =
-      "An error occurred while updating the transaction!";
+    setNotification("An error occurred while updating transaction!", "error");
   }
 };
 
@@ -135,111 +116,70 @@ const initializeCheckoutInfo = async () => {
       .eq("id", user?.id)
       .single();
 
-    if (error) {
-      console.error("Error fetching user data:", error.message);
-      return;
-    }
+    if (error) return;
 
     if (data) {
-      // console.log("User data fetched successfully:", data);
       full_name.value = data.fullname;
       phone.value = data.phone_number;
       address.value = data.address;
     }
-
   } catch (err) {
-    console.error("Unexpected error while fetching user data:", err);
+    setNotification("Unexpected error while fetching user data!", "error");
   }
 };
 
-  // Trigger the validation on button click
-  const TransectionValidate = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .update({ address: address.value, phone_number: phone.value })
-        .eq("id", user?.id);
+const TransectionValidate = async () => {
+  if (!full_name.value || !phone.value || !address.value) {
+    setNotification("Please fill in all required fields!", "warning");
+    return;
+  }
+  if (!trxId.value) {
+    setNotification("Please enter a valid transaction ID!", "warning");
+    return;
+  }
+  validateTransaction();
+};
 
-      if (error) {
-        // console.error("Error updating address and phone number:", error.message);
-        return;
-      }
+const OpenAbaPay = () => {
+  if (abaPayUrl.value) {
+    window.open(abaPayUrl.value, "_blank");
+  }
+};
 
-      if (data) {
-        // console.log("Address and phone number updated successfully:", data);
-        address.value = data[0].address;
-        phone.value = data[0].phone_number;
-      }
-    } catch (err) {
-      // console.error("Unexpected error while updating address and phone number:", err);
-    }
-    // validate the input like, full name, phone, address
+const ProceedToCheckout = async () => {
+  if (!isValidTransaction.value) return;
 
-    if (!full_name.value || !phone.value || !address.value) {
-      alert("Please fill in all the required fields.");
-      validationMessage.value = "Please fill in all the required fields.";
-      // console.log("Please fill in all the required fields.");
-      return;
-    }
-    if (!trxId.value) {
-      validationMessage.value = "Please enter a valid transaction ID!";
-      return;
-    }
+  try {
+    await cartStore.checkout();
+    await markTransactionAsUsed();
+    router.push(`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`);
+  } catch (error) {
+    setNotification("Error during checkout process!", "error");
+  }
+};
 
-    validateTransaction();
-  };
+onMounted(async () => {
+  try {
+    await initializeCheckoutInfo();
+    await cartStore.loadCartFromSupabase();
+    await abaPayUrlFetch();
+  } catch (error) {
+    setNotification("Error during setup!", "error");
+  }
+});
 
-  // Open ABA Pay URL in a new tab
-  const OpenAbaPay = () => {
-    if (abaPayUrl.value) {
-      window.open(abaPayUrl.value, "_blank");
-    }
-  };
-
-  // const TestFunction = async () => {
-  //   console.log("Test");
-  // };
-
-  const ProceedToCheckout = async () => {
-    // console.log("Proceed to checkout");
-
-    if (!isValidTransaction.value) return;
-
-    try {
-      await cartStore.checkout();
-      await markTransactionAsUsed();
-      // console.log("Checkout and transaction update successful.");
-      // route redirect to profile with user full name
-      router.push(`/profile/${user?.user_metadata?.full_name.replace(/\s+/g, '-')}`);
-
-    } catch (error) {
-      // console.error("Error during checkout process:", error);
-    }
-
-  };
-
-  // Run on mount
-  onMounted(async () => {
-    try {
-      await initializeCheckoutInfo();
-      await cartStore.loadCartFromSupabase();
-      await abaPayUrlFetch();
-    } catch (error) {
-      console.error("Error during setup:", error);
-    }
-  });
-
-  // Watch for cart changes
-  watch(
-    () => cartStore.cartItems,
-    async () => {
-      await abaPayUrlFetch();
-    }
-  );
+watch(
+  () => cartStore.cartItems,
+  async () => {
+    await abaPayUrlFetch();
+  }
+);
 </script>
+
 
 <template>
   <Navbar />
+  <Notification v-if="notification" :value="notificationMessage" :typeNotification="typeNotification" />
   <section class="dark:bg-gray-900 mt-0 bg-white py-8 antialiased md:mt-16 mt-10 md:py-16">
     <form action="#" class="mx-auto max-w-screen-xl px-4 text-left 2xl:px-0">
       <ol
@@ -262,10 +202,7 @@ const initializeCheckoutInfo = async () => {
           </span>
         </li>
 
-        <li 
-        :class="{'text-primary-700': isValidTransaction}"
-        class="flex shrink-0 items-center " 
-        >
+        <li :class="{ 'text-primary-700': isValidTransaction }" class="flex shrink-0 items-center ">
           <i class="fa-regular fa-circle-check mr-2"></i>
           Proceed Checkout
         </li>
@@ -339,16 +276,13 @@ const initializeCheckoutInfo = async () => {
               Enter your ABA transectin id, to claim your product
             </label>
             <div class="flex max-w-md items-center gap-4">
-              <input v-model="trxId" type="text" id="voucher"
-                class="dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
+              <input v-model="trxId" type="text" id="voucher" :class="isValidTransaction == true ? 'border-green-500 dark:border-green-500 text-green-500' : ''"
+                class="text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
                 placeholder="Trx. ID: 173692706018179" required />
               <button @click="TransectionValidate" v-if="isValidTransaction == false" type="button"
                 class="dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 flex items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
                 Check
               </button>
-            </div>
-            <div class="mt-2 text-sm text-yellow-600">
-              {{ validationMessage }}
             </div>
           </div>
         </div>

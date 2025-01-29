@@ -12,6 +12,9 @@ const closeCartOnClickOutside = (event) => {
     cartStore.isCartVisible = true;
   }
 };
+const CloseCart = () => {
+  cartStore.isCartVisible = false;
+};
 
 onMounted(() => {
   document.addEventListener("click", closeCartOnClickOutside);
@@ -37,11 +40,11 @@ onUnmounted(() => {
           <!-- Loop through cart items -->
           <div v-for="item in cartStore.cartItems" :key="item.id" class="flex justify-between items-center mb-4">
             <div>
-              <img :src="item.thumbnail || '/images/image-product-1-thumbnail.jpg'" class="w-10 rounded"
+              <img :src="item.thumbnail || '/images/image-product-1-thumbnail.jpg'" class="w-20 rounded-lg p-1 "
                 alt="product" />
             </div>
             <div class="text-start">
-              <h3 class="text-sm"> {{ item.title }} {{ item.cart_id }}</h3>
+              <h3 class="text-xs md:text-sm"> {{ item.title }} {{ item.cart_id }}</h3>
               <p class="text-sm">
                 ${{ item.price }} x {{ item.quantity }}
                 <strong class="text-black dark:text-white ms-1">
@@ -56,7 +59,7 @@ onUnmounted(() => {
             </div>
           </div>
           <!-- Checkout button -->
-          <router-link to="/checkout"
+          <router-link to="/checkout" @click="CloseCart"
             class="bg-orange-500 w-full h-12 mt-4 text-sm text-white rounded-lg hover:bg-orange-600">
             <button class="bg-orange-500 w-full h-12 mt-4 text-sm text-white rounded-lg hover:bg-orange-600">
               Checkout

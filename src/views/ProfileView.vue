@@ -5,6 +5,7 @@ import { supabase } from "@/services/supabase";
 import SkeletonProduct from "@/components/SkeletonProduct.vue";
 import Navbar from "@/layouts/navbar.vue";
 import AppFooter from "@/components/AppFooter.vue";
+import router from "@/router";
 
 export default {
   setup() {
@@ -20,6 +21,7 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const orders = ref([]);
+    const Allorders = ref([]);
     const wishlist = ref([]);
     const wishlistProduct = ref([]);
     const notification = ref(false);
@@ -141,6 +143,22 @@ export default {
         errorMessage.value = error.message;
       } finally {
         loading.value = false;
+      }
+    };
+    const fetchAllOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("order")
+          .select("*");
+
+        if (error) {
+          console.error("Error fetching orders:", error.message);
+          return;
+        }
+
+        Allorders.value = data;
+      } catch (err) {
+        console.error("Unexpected error while fetching orders:", err);
       }
     };
 
@@ -351,6 +369,7 @@ export default {
         fetchData();
       } else if (activeTab.value === 1) {
         fetchOrders();
+        fetchAllOrders();
       } else if (activeTab.value === 2) {
         fetchWishlist();
         fetchWishlistProduct();
@@ -379,13 +398,14 @@ export default {
 
     onMounted(() => {
       fetchData();
+      fetchAllOrders();
       initializeCheckoutInfo();
-
       if (activeTab.value === 1) {
         if (supabase.auth.user()) {
           fetchOrders();
         }
       }
+
     });
 
     return {
@@ -401,6 +421,7 @@ export default {
       activeTab,
       setActiveTab,
       fetchOrders,
+      Allorders,
       orders,
       fetchWishlist,
       wishlist,
@@ -527,7 +548,8 @@ export default {
           v-if="!loading && filteredProducts.length === 0">
           No products found!
         </h2>
-        <div class="col-span-12 mt-12 grid md:grid-cols-12 lg:grid-cols-10 gap-5">
+
+        <div class="col-span-12 mt-12 grid grid-cols-12 gap-5 mb-48">
           <!-- Skeleton Loader -->
           <div v-if="loading"
             class="col-span-12 h-full gap-5 rounded-lg bg-white p-5 sm:flex md:col-span-6 lg:col-span-4">
@@ -537,36 +559,42 @@ export default {
           </div>
           <!-- Render products when not loading -->
           <div v-for="(product, index) in filteredProducts" :key="index" v-else
-            class="col-span-12 h-full cursor-pointer px-5 cursor-pointer gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg md:col-span-6 lg:col-span-4">
-            <router-link :to="`/product/${product?.id}`" class="w-full">
-              <img :src="product.image" :alt="product.name" class="md:h-58 h-58 w-full rounded-lg object-cover" />
-              <div class="mt-3 text-left">
-                <h2 class="truncate text-lg font-semibold">
-                  {{ product.name }}
-                </h2>
-                <p class="mb-2 text-sm capitalize text-orange-500">
-                  {{ product.category }}
-                </p>
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <p class="my-3 cursor-auto text-lg font-semibold text-black">
-                      ${{ product.price - product.discount.toFixed(2) }}
+            class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-2 md:p-3 lg:p-5 hover:border-indigo-300 hover:shadow-lg sm:flex col-span-6 md:col-span-6 lg:col-span-4"
+            @click="handleClick(product)" @dblclick="handleDoubleClick(product)">
+            <div class="relative">
+              <img :src="product.image" :alt="product.name" class=" md:h-58 h-58 w-full rounded-lg object-cover" />
+              <div class="flex justify-end absolute bottom-2 right-2 lg:bottom-5 lg:right-5">
+                <i class="fa-regular fa-heart" :class="wishlist.includes(product)
+                  ? 'fa-solid fa-heart text-[#63E6BE]'
+                  : 'text-gray-500'
+                  "></i>
+              </div>
+            </div>
+            <div class="mt-3 text-left">
+              <h2 class="truncate text-xs md:text-sm lg:text-base font-semibold">
+                {{ product.name }}
+              </h2>
+              <p class="mb-2 text-xs md:text-sm lg:text-base capitalize text-orange-500">
+                {{ product.category }}
+              </p>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <p class=" my-0 cursor-auto text-xs md:text-sm lg:text-base font-semibold text-black">
+                    ${{ product.price - product.discount }}
+                  </p>
+                  <del v-if="product.discount">
+                    <p class="ml-2 cursor-auto text-xs md:text-sm lg:text-base text-gray-600">
+                      ${{ product.price.toFixed(2) }}
                     </p>
-                    <del v-if="product.discount">
-                      <p class="ml-2 cursor-auto text-sm text-gray-600">
-                        ${{ product.price.toFixed(2) }}
-                      </p>
-                    </del>
-                  </div>
-
-                  <div>
-                    <span class="text-sm text-green-600">Stock</span>
-                    <span class="text-md text-gray-600">
-                      {{ product.stock }}</span>
-                  </div>
+                  </del>
+                </div>
+                <div>
+                  <span class="text-xs md:text-sm lg:text-base text-cyan-600">Sold </span>
+                  <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ Allorders.filter(order =>
+                    order.product_id === product.id).length }}</span>
                 </div>
               </div>
-            </router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -582,48 +610,51 @@ export default {
           </div>
           <div class="rounded-lg border border-gray-200 shadow">
             <div v-for="(order, index) in orders" :key="order?.order_id"
-              class="flex items-center justify-between border-b bg-indigo-100 p-4 last:border-none">
-              <div class="flex items-center gap-4">
-                <img :src="order.product_thumbnail" alt="Product Thumbnail" class="h-10 w-10 rounded" />
-                <div>
-                  <h3 class="font-medium">{{ order.product_title }}</h3>
-                  <!-- <p class="text-sm text-gray-500 hidden sm:block">
+              class="flex items-center justify-between border-b bg-indigo-100 p-4 last:border-none hover:shadow-lg hover:bg-indigo-200">
+              <router-link :to="`/product/${order?.product_id}`" class="flex justify-between w-full hover:text-indigo-600">
+                <div class="flex items-center gap-4">
+                  <img :src="order.product_thumbnail" alt="Product Thumbnail" class="h-10 w-10 rounded" />
+                  <div>
+                    <h3 class="font-medium hover:underline">{{ order.product_title }}</h3>
+                    <!-- <p class="text-sm text-gray-500 hidden sm:block">
                     Order ID:
                     <span class="text-blue-500 underline">{{
                       order?.order_id
                     }}</span>
                   </p> -->
-                  <p class="text-sm text-gray-500 hidden sm:block">
-                    <span class="text-blue-500">{{
-                      order.meta_title.length > 50
-                        ? order.meta_title.substring(0, 50) + "..."
-                        : order.meta_title
-                    }}</span>
-                  </p>
+                    <p class="text-sm text-gray-500 hidden sm:block">
+                      <span class="text-blue-500">{{
+                        order.meta_title.length > 50
+                          ? order.meta_title.substring(0, 50) + "..."
+                          : order.meta_title
+                        }}</span>
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div class="text-right w-1/4">
-                <p class="font-semibold text-gray-800">
-                  ${{ order.total_price }} * {{ order.quantity }}
-                </p>
-                <span class="text-sm text-right" :class="{
-                  ' text-green-600':
-                    order.order_status === 'shipped',
-                  'text-yellow-600':
-                    order.order_status === 'pending',
-                  'text-red-600':
-                    order.order_status === 'canceled',
-                }">
-                  {{ order.order_status }}
-                </span>
-              </div>
+                <div class="text-right w-1/4">
+                  <p class="font-semibold text-gray-800">
+                    ${{ order.total_price }} * {{ order.quantity }}
+                  </p>
+                  <span class="text-sm text-right" :class="{
+                    ' text-green-600':
+                      order.order_status === 'shipped',
+                    'text-yellow-600':
+                      order.order_status === 'pending',
+                    'text-red-600':
+                      order.order_status === 'canceled',
+                  }">
+                    {{ order.order_status }}
+                  </span>
+                </div>
+              </router-link>
             </div>
             <div v-if="!orders || orders.length === 0">
               <div class="p-4 text-center text-gray-500">
+                <i class="fa-regular fa-face-frown text-6xl"></i>
                 <p>
-                  You don't have any orders yet.
+                  Empty order list
                   <br />
-                  Once you've placed an order, it will appear here.
+                  Once user's placed an order, it will appear here.
                 </p>
                 <router-link to="/"
                   class="mt-4 inline-block rounded-lg bg-indigo-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300">
@@ -678,22 +709,28 @@ export default {
                   </del>
                 </div>
                 <div>
-                  <span class="text-xs md:text-sm lg:text-base text-green-600">Stock</span>
-                  <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ product.stock }}</span>
+                  <span class="text-xs md:text-sm lg:text-base text-cyan-600">Sold </span>
+                  <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ Allorders.filter(order =>
+                    order.product_id === product.id).length }}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Empty Wishlist State -->
-          <div v-else class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div class="text-center">
-              <i class="fa-regular fa-heart text-6xl text-gray-300"></i>
-              <h2 class="mt-4 text-lg font-medium">Your wishlist is empty</h2>
-              <p class="text-sm text-gray-500">Start adding your favorite items now!</p>
+          <div v-else class="col-span-12 lg:ml-56 h-full">
+            <div class="p-4 text-center text-gray-500">
+              <i class="fa-regular fa-heart text-6xl"></i>
+              <p>
+                Empty Wishlist
+                <br />
+                Add some products to wishlist to see them here.
+              </p>
+
               <router-link to="/"
-                class="mt-6 inline-block rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700">Browse
-                Products</router-link>
+                class="mt-4 inline-block rounded-lg bg-indigo-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                Start Shopping
+              </router-link>
             </div>
           </div>
         </div>
@@ -758,9 +795,11 @@ export default {
             Info</button>
         </form>
 
-        <div v-if="full_name.replace(/\s+/g, '-') !== $route.params.id" class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4" role="alert">
+        <div v-if="full_name.replace(/\s+/g, '-') !== $route.params.id"
+          class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4" role="alert">
           <p class="font-bold">Access denied</p>
-          <p>You don't have permission to access this user's information. Please go to your own profile and update your information.</p>
+          <p>You don't have permission to access this user's information. Please go to your own profile and update your
+            information.</p>
         </div>
 
 

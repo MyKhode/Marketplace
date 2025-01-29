@@ -246,7 +246,7 @@ onMounted(() => {
                   <div class="flex items-center">
                     <p class="inline-flex items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
                       <img class="mr-2 w-6 h-6 rounded-full" :src="comment.users.meta.avatar_url" alt="User Avatar">
-                      {{ comment.users.fullname }}
+                      <p class="truncate">{{ comment.users.fullname }}</p>
                     </p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
                       <time :datetime="comment.created_at">{{ new Date(comment.created_at).toLocaleString('en-US', {
