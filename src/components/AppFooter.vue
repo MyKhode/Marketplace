@@ -5,7 +5,7 @@
     
     <div class="mt-10 flex w-full flex-col items-center justify-center gap-4 border-t border-stone-200 py-4 md:flex-row md:justify-between">
       <small class="font-sans antialiased text-sm text-current text-center">© 2024
-        <a href="https://material-tailwind.com/">Material Tailwind</a>. All Rights Reserved.</small>
+        <a href="https://discord.gg/ySCGdyArHb">Ikhode Studio</a>. All Rights Reserved.</small>
       <div class="flex gap-1 sm:justify-center">
         <a href="https://web.facebook.com/tinh25store" target="_blank" rel="noopener noreferrer"  class="inline-grid place-items-center border align-middle select-none font-sans font-medium text-center transition-all duration-300 ease-in disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-sm min-w-[34px] min-h-[34px] rounded-md bg-transparent border-transparent text-stone-800 hover:bg-stone-200/10 hover:border-stone-600/10 shadow-none hover:shadow-none">
           <i class="fa-brands fa-facebook-f"></i>

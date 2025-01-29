@@ -29,6 +29,10 @@ const isMobileMenuVisible = ref(false);
 function toggleMobileMenu() {
   isMobileMenuVisible.value = !isMobileMenuVisible.value;
 }
+async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) alert(error.message);
+}
 //   if (user) {
 //     console.log("User Metadata:", metadata.value);
 //     console.log("Avatar URL :", user.user_metadata.avatar_url);
@@ -73,9 +77,15 @@ function toggleMobileMenu() {
         <!-- Cart Button -->
         <button ref="{{cartStore.cartRef}}" v-if="(['/', '/product/'].some(path => $route.path.startsWith(path)))"
           @click="toggleCart"
-          class="cart-toggle-btn flex items-center justify-center rounded-md bg-stone-200 px-2 py-1 text-sm text-stone-800 hover:bg-stone-300">
+          class="cart-toggle-btn flex items-center justify-center rounded-md px-3 py-2 text-xs bg-stone-200 text-stone-800 hover:bg-stone-300">
           <i class="fa-solid fa-cart-arrow-down"></i>&nbsp;
           <div class="hidden lg:block">Cart</div> ({{ cartStore.cartItems.length }})
+        </button>
+        <button type="button" @click="signOut" class="hidden lg:flex items-center px-3 py-2 text-xs font-medium text-center text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 shadow-md shadow-red-500/50 dark:shadow-lg dark:shadow-red-800/80 rounded-lg">
+          <i class="fa-solid fa-user mr-1"></i>&nbsp;
+          <div>
+            Logout
+          </div>
         </button>
 
         <!-- Profile Picture -->
@@ -98,8 +108,9 @@ function toggleMobileMenu() {
     </div>
 
     <!-- Mobile Dropdown Menu -->
-    <div v-if="isMobileMenuVisible" class="mt-2 flex flex-col gap-2 lg:hidden text-left">
-      <a href="https://web.facebook.com/tinh25store" class="block rounded-md bg-stone-200 px-2 py-1 text-stone-800 hover:bg-stone-300">
+    <div v-if="isMobileMenuVisible" class="mt-2 flex flex-col gap-2 lg:hidden text-left pb-3">
+      <a href="https://web.facebook.com/tinh25store"
+        class="block rounded-md bg-stone-200 px-2 py-1 text-stone-800 hover:bg-stone-300">
         <i class="fa-brands fa-square-facebook"></i>
         <span class="ml-2">Facebook</span>
       </a>
@@ -111,6 +122,10 @@ function toggleMobileMenu() {
         class="block rounded-md bg-stone-200 px-2 py-1 text-stone-800 hover:bg-stone-300">
         Profile
       </router-link>
+      <button type="button" @click="signOut" class="block rounded-lg bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 shadow-md shadow-red-500/50 dark:shadow-lg dark:shadow-red-800/80 font-medium text-white px-2 py-1 text-center">
+        <i class="fa-solid fa-user mr-1"></i>
+        Logout
+      </button>
     </div>
   </nav>
 </template>

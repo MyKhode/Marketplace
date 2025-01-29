@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { supabase } from "@/services/supabase";
 import SkeletonProduct from "@/components/SkeletonProduct.vue";
-import SuccessNotification from "./SuccessNotification.vue";
+import Notification from "./Notification.vue";
 
 // Content List
 // 1. State Variables
@@ -23,6 +23,8 @@ export default {
     const inputSearch = ref("");
     const loading = ref(true);
     const notification = ref(false);
+    const notificationMessage = ref("");
+    const typeNotification = ref("");
     const route = useRoute();
     const router = useRouter();
     const wishlist = ref([]);
@@ -80,7 +82,8 @@ export default {
       const standardizedProductId = String(productId);
 
       // Toggle logic: Add or remove based on inclusion
-      wishlist.value = wishlist.value.includes(standardizedProductId)
+      const isProductInWishlist = wishlist.value.includes(standardizedProductId);
+      wishlist.value = isProductInWishlist
         ? wishlist.value.filter((id) => id !== standardizedProductId)
         : [...wishlist.value, standardizedProductId];
 
@@ -93,6 +96,8 @@ export default {
       if (error) {
         console.error("Error updating wishlist:", error);
       }
+
+      return !isProductInWishlist; // Return true if product was added, false if removed
     };
 
     // Proper watch to track changes and react
@@ -143,17 +148,19 @@ export default {
     };
 
     // Updated handleDoubleClick function
-    const handleDoubleClick = (product) => {
+    const handleDoubleClick = async (product) => {
       if (clickTimeout) clearTimeout(clickTimeout);
       notification.value = true;
 
-      addToWishlist(product.id); // Toggle the wishlist
+      const wasAdded = await addToWishlist(product.id); // Toggle the wishlist
 
-      // console.log(
-      //   wishlist.value.includes(product.id)
-      //     ? `Product ${product.name} added to wishlist`
-      //     : `Product ${product.name} removed from wishlist`
-      // );
+      console.log(
+        `Product ${product.id} ${wasAdded ? 'added' : 'removed'} from wishlist`
+      );
+      notificationMessage.value = `Product ${
+        product.name.length > 10 ? product.name.slice(0, 10) + "..." : product.name
+      } ${wasAdded ? 'added' : 'removed'}`;
+      typeNotification.value = wasAdded ? 'success' : 'error';
 
       setTimeout(() => {
         notification.value = false;
@@ -171,6 +178,8 @@ export default {
       setActiveCategory,
       loading,
       notification,
+      notificationMessage,
+      typeNotification,
       handleClick,
       handleDoubleClick,
       wishlist,
@@ -186,8 +195,7 @@ export default {
     <h1 class="col-span-12 mb-5 text-left text-3xl font-bold capitalize">
       Shop by Category
     </h1>
-    <SuccessNotification v-if="notification" value="Product added to wishlist." />
-
+    <Notification v-if="notification" :value="notificationMessage" :typeNotification="typeNotification" />
     <form class="col-span-12 md:col-span-6">
       <label for="default-search" class="dark:text-gray-300 sr-only mb-2 text-sm font-medium text-gray-900">
         Search
@@ -220,43 +228,44 @@ export default {
     </h2>
     <div class="col-span-12 mt-12 grid grid-cols-12 gap-5">
       <!-- Skeleton Loader -->
-      <div v-if="loading" class="col-span-12 h-full gap-5 rounded-lg bg-white p-5 sm:flex md:col-span-6 lg:col-span-4">
-        <SkeletonProduct />
-        <SkeletonProduct />
+      <div v-if="loading" class="product-card col-span-12 h-full gap-5 flex rounded-lg bg-white p-5 sm:col-span-2 md:col-span-6 lg:col-span-4">
         <SkeletonProduct />
       </div>
       <!-- Render products when not loading -->
       <div v-for="(product, index) in filteredProducts" :key="index"
-        class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
+        class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-2 md:p-3 lg:p-5 hover:border-indigo-300 hover:shadow-lg sm:flex col-span-6 md:col-span-6 lg:col-span-4"
         @click="handleClick(product)" @dblclick="handleDoubleClick(product)">
-        <img :src="product.image" :alt="product.name" class=" md:h-58 h-58 w-full rounded-lg object-cover" />
-        <div class="mt-3 text-left">
-          <div class="flex justify-end">
+        <div class="relative">
+          <img :src="product.image" :alt="product.name" class=" md:h-58 h-58 w-full rounded-lg object-cover" />
+          <div class="flex justify-end absolute bottom-2 right-2 lg:bottom-5 lg:right-5">
             <i class="fa-regular fa-heart" :class="wishlist.some((id) => id.includes(product.id))
-                ? 'fa-solid fa-heart text-[#63E6BE]'
-                : 'text-gray-500'
+              ? 'fa-solid fa-heart text-[#63E6BE]'
+              : 'text-gray-500'
               "></i>
           </div>
-          <h2 class="truncate text-lg font-semibold">
+        </div>
+        <div class="mt-3 text-left">
+
+          <h2 class="truncate text-xs md:text-sm lg:text-base font-semibold">
             {{ product.name }}
           </h2>
-          <p class="mb-2 text-sm capitalize text-orange-500">
+          <p class="mb-2 text-xs md:text-sm lg:text-base capitalize text-orange-500">
             {{ product.category }}
           </p>
           <div class="flex items-center justify-between">
             <div class="flex items-center">
-              <p class="my-3 cursor-auto text-lg font-semibold text-black">
+              <p class=" my-0 cursor-auto text-xs md:text-sm lg:text-base font-semibold text-black">
                 ${{ product.price - product.discount.toFixed(2) }}
               </p>
               <del v-if="product.discount">
-                <p class="ml-2 cursor-auto text-sm text-gray-600">
+                <p class="ml-2 cursor-auto text-xs md:text-sm lg:text-base text-gray-600">
                   ${{ product.price.toFixed(2) }}
                 </p>
               </del>
             </div>
             <div>
-              <span class="text-sm text-green-600">Stock</span>
-              <span class="text-md text-gray-600"> {{ product.stock }}</span>
+              <span class="text-xs md:text-sm lg:text-base text-green-600">Stock</span>
+              <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ product.stock }}</span>
             </div>
           </div>
         </div>

@@ -240,7 +240,7 @@ const initializeCheckoutInfo = async () => {
 
 <template>
   <Navbar />
-  <section class="dark:bg-gray-900 mt-0 bg-white py-8 antialiased md:mt-16 md:py-16">
+  <section class="dark:bg-gray-900 mt-0 bg-white py-8 antialiased md:mt-16 mt-10 md:py-16">
     <form action="#" class="mx-auto max-w-screen-xl px-4 text-left 2xl:px-0">
       <ol
         class="dark:text-gray-400 flex w-full max-w-2xl items-center text-center text-sm font-medium text-gray-500 sm:text-base">

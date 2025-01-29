@@ -1,6 +1,6 @@
 <script>
 import { ref, computed, onMounted, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { supabase } from "@/services/supabase";
 import SkeletonProduct from "@/components/SkeletonProduct.vue";
 import Navbar from "@/layouts/navbar.vue";
@@ -21,6 +21,7 @@ export default {
     const router = useRouter();
     const orders = ref([]);
     const wishlist = ref([]);
+    const wishlistProduct = ref([]);
     const notification = ref(false);
     const activeTab = ref(0);
 
@@ -28,6 +29,9 @@ export default {
     const bio = ref("");
     const phone = ref("");
     const address = ref("");
+
+    const notificationMessage = ref("");
+    const typeNotification = ref("");
 
 
     const setActiveTab = (index) => {
@@ -42,7 +46,7 @@ export default {
 
         const { data: usersData, error: usersError } = await supabase
           .from("users")
-          .select("id, email, fullname, meta, bio, role, wishlist")
+          .select("id, email, fullname, meta, bio, role")
           .eq("fullname", route.params.id.replace("-", " "))
           .single();
 
@@ -97,6 +101,7 @@ export default {
         loading.value = false;
       }
     };
+
 
     const fetchOrders = async () => {
       try {
@@ -188,73 +193,78 @@ export default {
       }
     };
 
-    const addToWishlist = async (productId) => {
+    const fetchWishlistProduct = async () => {
+      const { data: wishlistData } = await supabase
+        .from("users")
+        .select("wishlist")
+        .eq("id", supabase.auth.user().id)
+        .single();
+
       try {
-        const standardizedProductId = String(productId); // Ensure the productId is standardized
-
-        // Check if the product is already in the wishlist by comparing the `id` field of each object in the array
-        const productIndex = wishlist.value.findIndex(item => item.id === standardizedProductId);
-
-        if (productIndex !== -1) {
-          // If the product is in the wishlist, remove it
-          wishlist.value.splice(productIndex, 1);
-          // console.log(`Product ID ${standardizedProductId} removed from wishlist`);
-        } else {
-          // If the product is not in the wishlist, add it
-          wishlist.value.push({ id: standardizedProductId }); // Add it as an object with an `id` field
-          // console.log(`Product ID ${standardizedProductId} added to wishlist`);
-        }
-
-        // Log the current state of the wishlist
-        // console.log("hihi " + JSON.stringify(wishlist.value));
-
-        // Update the wishlist in the database
-        const { error } = await supabase
-          .from("users")
-          .update({ wishlist: JSON.stringify(wishlist.value.id) }) // Save the entire wishlist array as a JSON string
-          .eq("id", supabase.auth.user().id);
-
-        if (error) {
-          console.error("Error updating wishlist:", error);
-          throw error;
-        }
-
-        // console.log("Updated Wishlist:", wishlist.value);
-      } catch (error) {
-        console.error("Error in addToWishlist:", error.message);
+        wishlistProduct.value = JSON.parse(wishlistData.wishlist || "[]"); // Parse JSON string
+      } catch (e) {
+        wishlistProduct.value = [];
       }
     };
 
+    // Update wishlist function to ensure reactivity
+    const addToWishlist = async (productId) => {
+      const standardizedProductId = String(productId);
 
-    watch(wishlist, (newWishlist) => {
+      // Toggle logic: Add or remove based on inclusion
+      const isProductInWishlist = wishlistProduct.value.includes(standardizedProductId);
+      wishlistProduct.value = isProductInWishlist
+        ? wishlistProduct.value.filter((id) => id !== standardizedProductId)
+        : [...wishlistProduct.value, standardizedProductId];
+
+      // Ensure `wishlist` is stored as a proper JSON array
+      const { error } = await supabase
+        .from("users")
+        .update({ wishlist: JSON.stringify(wishlistProduct.value) }) // Convert to JSON string
+        .eq("id", supabase.auth.user().id);
+
+      if (error) {
+        console.error("Error updating wishlist:", error);
+      }
+
+      return !isProductInWishlist; // Return true if product was added, false if removed
+    };
+
+
+    watch(wishlistProduct, (newWishlist) => {
       if (!Array.isArray(newWishlist)) {
         console.warn("Wishlist is not an array. Resetting to an empty array.");
-        wishlist.value = [];
+        wishlistProduct.value = [];
       }
     });
 
+    // 7. Click Event Handler (Start)
     let clickTimeout = null;
 
+    // Handle single click (navigate to product)
     const handleClick = (product) => {
       if (clickTimeout) clearTimeout(clickTimeout);
       clickTimeout = setTimeout(() => {
         router.push(`/product/${product.id}`);
-      }, 250);
+      }, 250); // Delay to distinguish single click
     };
 
-    const handleDoubleClick = (product) => {
+    // Updated handleDoubleClick function
+    const handleDoubleClick = async (product) => {
+
       if (clickTimeout) clearTimeout(clickTimeout);
       notification.value = true;
 
-      addToWishlist(product.id);
-      // console.log("product id" + product.id);
+      const wasAdded = await addToWishlist(product.id); // Toggle the wishlist
 
-      // console.log(
-      //   wishlist.value.includes(product.id)
-      //     ? `Product ${product.name} added to wishlist`
-      //     : `Product ${product.name} removed from wishlist`
-      // );
+      console.log(
+        `Product ${product.id} ${wasAdded ? 'added' : 'removed'} from wishlist`
+      );
+      notificationMessage.value = `Product ${product.name.length > 10 ? product.name.slice(0, 10) + "..." : product.name
+        } ${wasAdded ? 'added' : 'removed'}`;
+      typeNotification.value = wasAdded ? 'success' : 'error';
 
+      fetchWishlist();
       setTimeout(() => {
         notification.value = false;
       }, 1000);
@@ -310,12 +320,21 @@ export default {
           Object.assign(phone, { value: data[0].phone_number });
           Object.assign(address, { value: data[0].address });
           Object.assign(bio, { value: data[0].bio });
+
+          notification.value = true;
+          notificationMessage.value = "Updated successfully";
+          typeNotification.value = "success";
+          fetchData();
+          setTimeout(() => {
+            notification.value = false;
+          }, 2000);
         }
 
       } catch (err) {
         console.error("Unexpected error while updating user data:", err);
       }
     };
+
 
     watch(
       () => route.params.id,
@@ -334,6 +353,7 @@ export default {
         fetchOrders();
       } else if (activeTab.value === 2) {
         fetchWishlist();
+        fetchWishlistProduct();
       }
     });
 
@@ -393,6 +413,8 @@ export default {
       phone,
       address,
       saveInfo,
+      notificationMessage,
+      typeNotification,
     };
   },
 };
@@ -402,21 +424,21 @@ export default {
   <div>
     <div class="mx-auto">
       <Navbar />
-      <SuccessNotification v-if="notification" value="Product added to wishlist." />
+      <Notification v-if="notification" :value="notificationMessage" :typeNotification="typeNotification" />
       <div class="relative mx-auto my-3 mt-20 max-w-2xl">
         <!-- ------------------------------ -->
 
         <!-- top header -->
         <div class="my-5 flex flex-col items-center justify-center">
           <img
-            :src="users?.meta?.avatar_url || 'https://st.depositphotos.com/1779253/5140/v/450/depositphotos_51405259-stock-illustration-male-avatar-profile-picture-use.jpg'"
+            :src="users?.meta?.avatar_url ? decodeURIComponent(users.meta.avatar_url) : 'https://st.depositphotos.com/1779253/5140/v/450/depositphotos_51405259-stock-illustration-male-avatar-profile-picture-use.jpg'"
             alt="User Avatar" class="h-16 w-16 rounded-md bg-cover bg-center bg-no-repeat" />
           <span class="my-3">@{{ users?.fullname || 'Unknown' }}</span>
 
           <div class="flex gap-10 text-sm">
             <div class="flex flex-col items-center">
               <span class="font-bold">10</span>
-              <span>Following</span>
+              <span>Following </span>
             </div>
             <div class="flex flex-col items-center">
               <span class="font-bold">1.20 K</span>
@@ -582,7 +604,7 @@ export default {
               </div>
               <div class="text-right w-1/4">
                 <p class="font-semibold text-gray-800">
-                  ${{ order.total_price.toFixed(2) }} * {{ order.quantity }}
+                  ${{ order.total_price }} * {{ order.quantity }}
                 </p>
                 <span class="text-sm text-right" :class="{
                   ' text-green-600':
@@ -615,53 +637,81 @@ export default {
       <!-- end order list -->
       <!-- start wishlist list -->
       <div :class="{ hidden: activeTab !== 2 }" class="mx-auto flex max-w-4xl p-6 text-left gap-5 flex-wrap">
-        <div v-for="(product, index) in wishlist" :key="index"
-          class="col-span-12 md:w-1/3 w-full h-full cursor-pointer cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-5 hover:border-indigo-300 hover:shadow-lg sm:flex md:col-span-6 lg:col-span-4"
-          @click="handleClick(product)">
-          <img :src="product.image" :alt="product.name" class="h-58 w-full rounded-lg object-cover" />
-          <div class="mt-3 text-left">
-            <div class="flex justify-end">
-              <i class="fa-regular fa-heart" :class="wishlist.includes(product)
-                ? 'fa-solid fa-heart text-[#63E6BE]'
-                : 'text-gray-500'
-                "></i>
-            </div>
-            <h2 class="truncate text-lg font-semibold">{{ product.name }}</h2>
-            <p class="mb-2 text-sm capitalize text-orange-500">
-              {{ product.category }}
-            </p>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <p class="my-3 cursor-auto text-lg font-semibold text-black">
-                  ${{ product.price - product.discount.toFixed(2) }}
-                </p>
-                <del v-if="product.discount">
-                  <p class="ml-2 cursor-auto text-sm text-gray-600">
-                    ${{ product.price.toFixed(2) }}
-                  </p>
-                </del>
+
+        <div class="col-span-12 mt-12 grid grid-cols-12 gap-5 mb-48">
+          <!-- Skeleton Loader -->
+          <div v-if="loading"
+            class="col-span-12 h-full gap-5 rounded-lg bg-white p-5 sm:flex md:col-span-6 lg:col-span-4">
+            <SkeletonProduct />
+            <SkeletonProduct />
+            <SkeletonProduct />
+          </div>
+          <!-- Render products when not loading -->
+          <div v-if="wishlist.length > 0" v-for="(product, index) in wishlist" :key="index"
+            class="col-span-12 h-full cursor-pointer flex-col gap-5 rounded-lg border border-transparent bg-indigo-50 p-2 md:p-3 lg:p-5 hover:border-indigo-300 hover:shadow-lg sm:flex col-span-6 md:col-span-6 lg:col-span-4"
+            @click="handleClick(product)" @dblclick="handleDoubleClick(product)">
+            <div class="relative">
+              <img :src="product.image" :alt="product.name" class=" md:h-58 h-58 w-full rounded-lg object-cover" />
+              <div class="flex justify-end absolute bottom-2 right-2 lg:bottom-5 lg:right-5">
+                <i class="fa-regular fa-heart" :class="wishlist.includes(product)
+                  ? 'fa-solid fa-heart text-[#63E6BE]'
+                  : 'text-gray-500'
+                  "></i>
               </div>
-              <div>
-                <span class="text-sm text-green-600">Stock</span>
-                <span class="text-md text-gray-600"> {{ product.stock }}</span>
+            </div>
+            <div class="mt-3 text-left">
+              <h2 class="truncate text-xs md:text-sm lg:text-base font-semibold">
+                {{ product.name }}
+              </h2>
+              <p class="mb-2 text-xs md:text-sm lg:text-base capitalize text-orange-500">
+                {{ product.category }}
+              </p>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <p class=" my-0 cursor-auto text-xs md:text-sm lg:text-base font-semibold text-black">
+                    ${{ product.price - product.discount }}
+                  </p>
+                  <del v-if="product.discount">
+                    <p class="ml-2 cursor-auto text-xs md:text-sm lg:text-base text-gray-600">
+                      ${{ product.price.toFixed(2) }}
+                    </p>
+                  </del>
+                </div>
+                <div>
+                  <span class="text-xs md:text-sm lg:text-base text-green-600">Stock</span>
+                  <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ product.stock }}</span>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Empty Wishlist State -->
+          <div v-else class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div class="text-center">
+              <i class="fa-regular fa-heart text-6xl text-gray-300"></i>
+              <h2 class="mt-4 text-lg font-medium">Your wishlist is empty</h2>
+              <p class="text-sm text-gray-500">Start adding your favorite items now!</p>
+              <router-link to="/"
+                class="mt-6 inline-block rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700">Browse
+                Products</router-link>
+            </div>
+          </div>
         </div>
+
       </div>
 
       <!-- end wishlist list -->
       <!-- start user info profile list  -->
       <div :class="{ hidden: activeTab !== 3 }"
         class="mt-10 text-left gap-5 flex-wrap flex items-center justify-center">
-        <form>
+        <form v-show="full_name.replace(/\s+/g, '-') === $route.params.id">
           <div class="grid gap-6 mb-6 md:grid-cols-2">
             <div>
               <label for="your_name" class="dark:text-white mb-2 block text-sm font-medium text-gray-900">
                 គោត្ដនាម, នាម
               </label>
               <input type="text" id="your_name" v-model="full_name"
-                class="dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
+                class=" dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
                 placeholder="John Doe" required />
             </div>
             <div>
@@ -704,8 +754,14 @@ export default {
             </div>
           </div>
           <button type="button" @click="saveInfo()"
-            class="text-gray-900 bg-gradient-to-r from-lime-200 via-lime-400 to-lime-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-lime-300 dark:focus:ring-lime-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Save Info</button>
+            class="text-gray-900 bg-gradient-to-r from-lime-200 via-lime-400 to-lime-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-lime-300 dark:focus:ring-lime-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Save
+            Info</button>
         </form>
+
+        <div v-if="full_name.replace(/\s+/g, '-') !== $route.params.id" class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4" role="alert">
+          <p class="font-bold">Access denied</p>
+          <p>You don't have permission to access this user's information. Please go to your own profile and update your information.</p>
+        </div>
 
 
       </div>
