@@ -5,6 +5,7 @@ import { supabase } from "@/services/supabase";
 import lightbox from "./lightbox.vue";
 import Navbar from "./Navbar.vue";
 import AppFooter from "./AppFooter.vue";
+import { useCartStore } from "@/stores/cartStore";
 
 const route = useRoute();
 const product = ref({});
@@ -17,6 +18,8 @@ const editingCommentId = ref(null);
 const editedCommentContent = ref("");
 const newReply = ref("");
 const isLoading = ref(true);
+
+const cartStore = useCartStore();
 
 // Fetch product details
 async function fetchProductDetails() {
@@ -153,6 +156,21 @@ const deleteComment = async (commentId) => {
 // Watch for route changes and refetch product details
 watch(() => route.params.id, fetchProductDetails, { immediate: true });
 
+function addCartButton() {
+  if (quantity.value > 0) {
+    const item = {
+      product_id: product.value.product_id,
+      title: product.value.title,
+      price: product.value.price,
+      discount: product.value.discount,
+      thumbnail: product.value.thumbnail,
+      quantity: quantity.value,
+    };
+    cartStore.addItem(item);
+  }
+}
+
+
 onMounted(() => {
   fetchProductDetails();
   fetchComments();
@@ -168,6 +186,7 @@ onMounted(() => {
       <div class=" mt-16" v-if="isLoading" >
         <SkeletonProduct />
       </div>
+      <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="isLoading" />
 
       <div class="text-left lg:mt-0 mt-5 px-5">
         <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`"
