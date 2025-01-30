@@ -79,10 +79,11 @@ export const useCartStore = defineStore("cart", () => {
 
     const { data, error } = await supabase
       .from("cart")
-      .select(`cart_id, product_id, quantity, product:product_id (title, price, discount, meta_title, thumbnail, seller_id)`)
+      .select(
+        `cart_id, product_id, quantity, product:product_id (title, price, discount, meta_title, thumbnail, seller_id)`
+      )
       .eq("user_id", user.value.id);
 
-        
     if (error) {
       // console.error("Error loading cart:", error);
       console.error("Error loading cart:");
@@ -90,19 +91,22 @@ export const useCartStore = defineStore("cart", () => {
     }
 
     cartItems.value = (data || [])
-      .map((item: any) => item.product && {
-        cart_id: item.cart_id,
-        product_id: item.product_id,
-        title: item.product.title, 
-        meta_title: item.product.meta_title,
-        price: item.product.price - item.product.discount,
-        discount: item.product.discount,
-        thumbnail: item.product.thumbnail,
-        quantity: item.quantity,
-        seller_id: item.product.seller_id,
-      })
+      .map(
+        (item: any) =>
+          item.product && {
+            cart_id: item.cart_id,
+            product_id: item.product_id,
+            title: item.product.title,
+            meta_title: item.product.meta_title,
+            price: item.product.price - item.product.discount,
+            discount: item.product.discount,
+            thumbnail: item.product.thumbnail,
+            quantity: item.quantity,
+            seller_id: item.product.seller_id,
+          }
+      )
       .filter(Boolean) as CartItem[];
-      // console.log("cartItems -- :", cartItems.value);
+    // console.log("cartItems -- :", cartItems.value);
   };
   // console.log("value price:", cartItems.value[0].price);
 
@@ -111,24 +115,26 @@ export const useCartStore = defineStore("cart", () => {
       console.error("User is not logged in");
       return; // Early return if the user is not logged in
     }
-  
+
     try {
       // console.log("checkout, user:", user.value);
       // console.log("checkout, cartItems:", cartItems.value);
-  
+
       const { data: addressData, error: addressError } = await supabase
         .from("users")
         .select("*")
         .eq("id", user.value.id)
         .single();
-  
-      if (addressError) throw new Error(`Failed to fetch address: ${addressError.message}`);
+
+      if (addressError)
+        throw new Error(`Failed to fetch address: ${addressError.message}`);
       // const shippingAddress = addressData
       //   ? Object.values(addressData).join(", ")
       //   : "No address provided";
-  
+
       const shippingAddress = addressData?.address || "No address provided";
-      const phone_number = addressData?.phone_number || "No phone number provided";
+      const phone_number =
+        addressData?.phone_number || "No phone number provided";
       const full_name = addressData?.fullname || "No name provided";
       const totalPrice = cartItems.value.reduce(
         (sum, item) => sum + item.price * item.quantity,
@@ -150,34 +156,70 @@ export const useCartStore = defineStore("cart", () => {
         // seller_id: item.seller_id,
         // thumbnail: item.thumbnail,
       }));
-  
+
       console.log("orderRecords:", orderRecords);
-  
+
       // Insert all the cart items as separate orders
       const { data: orderData, error: orderError } = await supabase
         .from("order")
         .insert(orderRecords);
-  
+
       // console.log("orderData:", orderData);
       // console.log("orderError:", orderError);
-  
-      if (orderError || !orderData) throw new Error(`Failed to create orders: ${orderError?.message}`);
-  
+
+      if (orderError || !orderData)
+        throw new Error(`Failed to create orders: ${orderError?.message}`);
+
       // After inserting the orders, delete the cart items
       const { error: clearCartError } = await supabase
         .from("cart")
         .delete()
         .eq("user_id", user.value.id);
-  
-      if (clearCartError) throw new Error(`Failed to clear cart: ${clearCartError.message}`);
-  
+
+      if (clearCartError)
+        throw new Error(`Failed to clear cart: ${clearCartError.message}`);
+
+      // Construct message for Telegram
+      let message = `🚀 *New Order Received* 🚀\n\n`;
+      message += `👤 *Customer Name:* ${full_name}\n📞 *Phone:* ${phone_number}\n📍 *Address:* ${shippingAddress}\n\n`;
+      message += `🛒 *Order Details:* ${cartItems.value}\n`;
+      cartItems.value.forEach((item, index) => {
+        message += `#${index + 1} *${item.title}* - ${item.quantity} x $${
+          item.price
+        }\n`;
+      });
+      message += `\n💰 *Total Price:* $${totalPrice}\n🕒 *Order Time:* ${new Date().toLocaleString()}`;
+
+      // Send order details to Telegram
+      await sendToTelegram(message);
+
       cartItems.value = []; // Clear cart items locally
+
       console.log("Checkout successful!");
     } catch (error) {
       console.error("Error during checkout:", error);
     }
   };
-  
+
+  const sendToTelegram = async (message: string) => {
+    const BOT_TOKEN = "7641689712:AAHTuJHvk-5f5hpSu1MXBWG5O9m3WYHMS5c"; // Replace with your Telegram bot token
+    const CHAT_ID = "-1002423725086"; // Replace with your Telegram group chat ID
+    const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+    try {
+      await fetch(TELEGRAM_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message,
+          parse_mode: "Markdown",
+        }),
+      });
+    } catch (error) {
+      console.error("Error sending message to Telegram:", error);
+    }
+  };
 
   const toggleCartVisibility = () => {
     isCartVisible.value = !isCartVisible.value;
@@ -197,4 +239,3 @@ export const useCartStore = defineStore("cart", () => {
     cartRef,
   };
 });
-
