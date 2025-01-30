@@ -196,8 +196,7 @@ onMounted(() => {
         <h2 class="text-2xl font-bold w-90 mb-3 lg:mb-6">
           {{ product.title }}
         </h2>
-        <p class="text-[#a1a1a1] max-w-96 mb-5">
-          {{ product.content }}
+        <p class="text-[#a1a1a1] max-w-96 mb-5" v-html="product.content.replace(/\n/g, '<br>')">
         </p>
         <div class="flex justify-between items-center">
           <div class="flex justify-between mb-6 lg:flex-col md:items-left ">
