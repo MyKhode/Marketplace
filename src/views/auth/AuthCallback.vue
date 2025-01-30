@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
@@ -6,12 +7,7 @@ const { supabase } = useAuthStore();
 
 onMounted(() => {
   if (supabase.auth.user()) {
-    console.log(
-      "arrived on callback page with an existing user, so going home"
-    );
-    setTimeout(() => {
-      router.push("/");
-    }, 0);
+    router.replace("/");
   }
 });
 </script>

@@ -1,4 +1,6 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+
 const props = defineProps({
   value: {
     type: String,
@@ -8,6 +10,21 @@ const props = defineProps({
     type: String,
     required: true
   }
+})
+
+const audio = ref(null)
+
+onMounted(() => {
+    audio.value = new Audio('/audio/notification.wav')
+    audio.value.load()
+    audio.value.play()
+})
+
+watch(props, () => {
+    if (audio.value) {
+        audio.value.load()
+        audio.value.play()
+    }
 })
 </script>
 <template>
@@ -30,7 +47,7 @@ const props = defineProps({
       <i class="fa-solid fa-circle-xmark"></i>
       <span class="sr-only">Check icon</span>
     </div>
-    <div class="ms-3 text-sm font-normal">{{ props.value }} {{ props.typeNotification }}</div>
+    <div class="ms-3 text-sm font-normal">{{ props.value }}</div>
     <button type="button"
       class="dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700 -mx-1.5 -my-1.5 ms-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300"
       data-dismiss-target="#toast-success" aria-label="Close">

@@ -446,6 +446,7 @@ export default {
     <div class="mx-auto">
       <Navbar />
       <Notification v-if="notification" :value="notificationMessage" :typeNotification="typeNotification" />
+      <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="loading" />
       <div class="relative mx-auto my-3 mt-20 max-w-2xl">
         <!-- ------------------------------ -->
 
@@ -669,7 +670,7 @@ export default {
       <!-- start wishlist list -->
       <div :class="{ hidden: activeTab !== 2 }" class="mx-auto flex max-w-4xl p-6 text-left gap-5 flex-wrap">
 
-        <div class="col-span-12 mt-12 grid grid-cols-12 gap-5 mb-48">
+        <div class="col-span-12 lg:mt-5 grid grid-cols-12 gap-5 mb-48">
           <!-- Skeleton Loader -->
           <div v-if="loading"
             class="col-span-12 h-full gap-5 rounded-lg bg-white p-5 sm:flex md:col-span-6 lg:col-span-4">

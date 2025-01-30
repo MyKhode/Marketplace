@@ -28,15 +28,20 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const wishlist = ref([]);
+    const wishlistProduct = ref([]);
     const orders = ref([]);
+    const trendingProducts = ref([]);
+    const allWishlist = ref([]);
+    const sortChangeEvent = ref("");
 
-    // 2. Fetch Products Function
+    // 1. Fetch Products Function
     const fetchProducts = async () => {
       loading.value = true;
+
       const { data: productData } = await supabase
         .from("product")
         .select(
-          "product_id, title, price, discount, stock, thumbnail, category_id"
+          "product_id, title, price, discount, stock, thumbnail, category_id, created_at"
         );
 
       const { data: categoryData } = await supabase
@@ -47,6 +52,7 @@ export default {
         "all",
         ...categoryData.map((category) => category.name),
       ];
+
       products.value = productData.map((product) => {
         const category = categoryData.find(
           (cat) => cat.category_id === product.category_id
@@ -59,10 +65,83 @@ export default {
           stock: product.stock,
           image: product.thumbnail,
           category: category ? category.name : "other",
+          createdAt: new Date(product.created_at), // Convert to Date object
         };
       });
+
+      // Default Sorting (e.g., Trending)
+      sortByTrending();
+
       loading.value = false;
     };
+
+    // 2. Fetch Wishlist & Determine Trending Products
+    const fetchWishlistProduct = async () => {
+      const { data: wishlistData } = await supabase
+        .from("users")
+        .select("wishlist");
+
+      let wishlistItems = [];
+      wishlistData.forEach((user) => {
+        if (user.wishlist) {
+          try {
+            const parsedWishlist = JSON.parse(user.wishlist);
+            wishlistItems = wishlistItems.concat(parsedWishlist);
+          } catch (e) {
+            console.error("Error parsing wishlist:", e);
+          }
+        }
+      });
+
+      // Count occurrences of each product_id
+      const productCount = wishlistItems.reduce((acc, productId) => {
+        acc[productId] = (acc[productId] || 0) + 1;
+        return acc;
+      }, {});
+
+      allWishlist.value = productCount;
+      // Convert to sorted array
+      trendingProducts.value = Object.entries(productCount)
+        .map(([id, count]) => ({ id: parseInt(id), count })) // Ensure ID is a number
+        .sort((a, b) => b.count - a.count); // Sort descending by count
+
+    };
+
+    // 3. Sorting Functions
+    const sortByTrending = () => {
+      products.value.sort((a, b) => {
+        const aCount = trendingProducts.value.find((p) => p.id === a.id)?.count || 0;
+        const bCount = trendingProducts.value.find((p) => p.id === b.id)?.count || 0;
+        return bCount - aCount; // Higher count comes first
+      });
+      // console.log("Products sorted by Trending:", products.value);
+      sortChangeEvent.value = "trending";
+    };
+
+    const sortByNewest = () => {
+      products.value.sort((a, b) => b.createdAt - a.createdAt); // Newest first
+      sortChangeEvent.value = "newest";
+    };
+
+    const sortByOldest = () => {
+      products.value.sort((a, b) => a.createdAt - b.createdAt); // Oldest first
+      sortChangeEvent.value = "oldest";
+    };
+
+
+    const handleSortChange = (event) => {
+      const value = event.target.value;
+      sortChangeEvent.value = event.target.value.toString();
+
+      if (value === "trending") {
+        sortByTrending();
+      } else if (value === "newest") {
+        sortByNewest();
+      } else if (value === "oldest") {
+        sortByOldest();
+      }
+    };
+
 
     const fetchWishlist = async () => {
       const { data: wishlistData } = await supabase
@@ -120,10 +199,18 @@ export default {
     // Proper watch to track changes and react
     watch(wishlist, (newWishlist) => {
       if (!Array.isArray(newWishlist)) {
-        console.warn("Wishlist is not an array. Resetting to an empty array.");
+        // console.warn("Wishlist is not an array. Resetting to an empty array.");
         wishlist.value = [];
       }
     });
+
+
+    watch([() => route.query.filter, () => route.query.sort], ([newFilter, newSort], [oldFilter, oldSort]) => {
+      if (newFilter !== oldFilter || newSort !== oldSort) {
+        fetchProducts();
+      }
+    })
+
 
     // 3. Watchers
     watch(() => route.params.id, fetchProducts);
@@ -150,7 +237,10 @@ export default {
 
     // 6. Lifecycle Hook
     onMounted(() => {
-      fetchProducts(), fetchWishlist(), fetchOrders();
+      fetchWishlistProduct(),
+        fetchWishlist(),
+        fetchProducts(),
+        fetchOrders();
     });
 
     // 7. Click Event Handler (Start)
@@ -171,13 +261,13 @@ export default {
 
       const wasAdded = await addToWishlist(product.id); // Toggle the wishlist
 
-      console.log(
-        `Product ${product.id} ${wasAdded ? 'added' : 'removed'} from wishlist`
-      );
-      notificationMessage.value = `Product ${
-        product.name.length > 10 ? product.name.slice(0, 10) + "..." : product.name
-      } ${wasAdded ? 'added' : 'removed'}`;
+      notificationMessage.value = `Product ${product.name.length > 10 ? product.name.slice(0, 10) + "..." : product.name
+        } ${wasAdded ? 'added' : 'removed'}`;
       typeNotification.value = wasAdded ? 'success' : 'error';
+
+      await fetchWishlist();
+      await fetchWishlistProduct();
+      if (sortChangeEvent.value === "trending") sortByTrending();
 
       setTimeout(() => {
         notification.value = false;
@@ -202,6 +292,13 @@ export default {
       wishlist,
       addToWishlist,
       orders,
+      wishlistProduct,
+      fetchWishlistProduct,
+      trendingProducts,
+      sortByTrending,
+      handleSortChange,
+      allWishlist,
+      sortChangeEvent,
     };
   },
 };
@@ -210,10 +307,21 @@ export default {
 <template>
   <div id="app"
     class="mx-auto md:mt-20 mt-10 grid min-h-screen max-w-screen-lg grid-cols-12 place-content-center items-center gap-x-3 px-5 py-10">
-    <h1 class="col-span-12 mb-5 text-left text-3xl font-bold capitalize">
+    <!-- <h1 class="col-span-12 mb-5 text-left text-3xl font-bold capitalize">
       Shop by Category
-    </h1>
+    </h1> -->
+    <div class="mb-4 flex items-center justify-between col-span-12">
+      <h2 class="text-md md:text-lg lg:text-3xl font-semibold">Shop by Category</h2>
+
+      <select class="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600"
+        @change="handleSortChange($event)">
+        <option value="trending">Sort by Trending</option>
+        <option value="newest">Sort by Newest</option>
+        <option value="oldest">Sort by Oldest</option>
+      </select>
+    </div>
     <Notification v-if="notification" :value="notificationMessage" :typeNotification="typeNotification" />
+    <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="loading" />
     <form class="col-span-12 md:col-span-6">
       <label for="default-search" class="dark:text-gray-300 sr-only mb-2 text-sm font-medium text-gray-900">
         Search
@@ -241,12 +349,14 @@ export default {
         </li>
       </ul>
     </div>
+
     <h2 class="col-span-12 my-12 text-xl font-bold text-indigo-600" v-if="!loading && filteredProducts.length === 0">
       No products found!
     </h2>
     <div class="col-span-12 mt-12 grid grid-cols-12 gap-5">
       <!-- Skeleton Loader -->
-      <div v-if="loading" class="product-card col-span-12 h-full gap-5 flex rounded-lg bg-white p-5 sm:col-span-2 md:col-span-6 lg:col-span-4">
+      <div v-if="loading"
+        class="product-card col-span-12 h-full gap-5 flex rounded-lg bg-white p-5 sm:col-span-2 md:col-span-6 lg:col-span-4">
         <SkeletonProduct />
       </div>
       <!-- Render products when not loading -->
@@ -267,9 +377,19 @@ export default {
           <h2 class="truncate text-xs md:text-sm lg:text-base font-semibold">
             {{ product.name }}
           </h2>
-          <p class="mb-2 text-xs md:text-sm lg:text-base capitalize text-orange-500">
-            {{ product.category }}
-          </p>
+          <div class="flex items-center justify-between">
+            <p class="mb-2 text-xs md:text-sm lg:text-base capitalize text-orange-500">
+              {{ product.category }}
+            </p>
+            <h2 class="flex items-center">
+              <!-- heart icon -->
+              <i class="fa-regular fa-heart text-cyan-600 text-sm lg:text-base"></i>
+              <p class="ml-2 cursor-auto text-xs md:text-sm lg:text-base text-gray-600">
+                {{ allWishlist[product.id] || 0 }}
+              <p class="hidden md:inline">favorites</p>
+              </p>
+            </h2>
+          </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <p class=" my-0 cursor-auto text-xs md:text-sm lg:text-base font-semibold text-black">
@@ -283,7 +403,8 @@ export default {
             </div>
             <div>
               <span class="text-xs md:text-sm lg:text-base text-cyan-600">Sold </span>
-              <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ orders.filter(order => order.product_id === product.id).length }}</span>
+              <span class="text-xs md:text-sm lg:text-base text-gray-600"> {{ orders.filter(order => order.product_id
+                === product.id).length }}</span>
             </div>
           </div>
         </div>
