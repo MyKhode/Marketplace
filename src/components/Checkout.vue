@@ -67,7 +67,7 @@ const abaPayUrlFetch = async () => {
 
 const validateTransaction = async () => {
   const totalPrice = cartStore.cartItems
-    .reduce((total, product) => total + product.price, 0)
+    .reduce((total, product) => total + product.price * product.quantity, 0)
     .toFixed(2);
 
   try {

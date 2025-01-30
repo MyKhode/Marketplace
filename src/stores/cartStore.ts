@@ -126,6 +126,13 @@ export const useCartStore = defineStore("cart", () => {
         .eq("id", user.value.id)
         .single();
 
+      const { data: productData, error: ProductError } = await supabase
+        .from("product")
+        .select("*")
+        .in("product_id", cartItems.value.map((item) => item.product_id));
+      const products = productData || [];
+      if (ProductError)
+        throw new Error(`Failed to fetch products: ${ProductError.message}`);
       if (addressError)
         throw new Error(`Failed to fetch address: ${addressError.message}`);
       // const shippingAddress = addressData
@@ -182,7 +189,10 @@ export const useCartStore = defineStore("cart", () => {
       // Construct message for Telegram
       let message = `🚀 *New Order Received* 🚀\n\n`;
       message += `👤 *Customer Name:* ${full_name}\n📞 *Phone:* ${phone_number}\n📍 *Address:* ${shippingAddress}\n\n`;
-      message += `🛒 *Order Details:* ${cartItems.value}\n`;
+      message += `🛒 *Order Details:*\n`;
+      cartItems.value.forEach((item) => {
+        message += `  • ${item.title} - ${item.quantity} x $${item.price}\n`;
+      });
       cartItems.value.forEach((item, index) => {
         message += `#${index + 1} *${item.title}* - ${item.quantity} x $${
           item.price
