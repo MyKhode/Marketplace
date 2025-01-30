@@ -15,6 +15,7 @@ const abaPayUrl = ref<string | null>(null);
 const trxId = ref("");
 const isTrxIdUsed = ref<boolean>(false);
 const isValidTransaction = ref<boolean>(false);
+const isValidTransactionFailed = ref<boolean>(false);
 
 const full_name = ref("");
 const phone = ref("");
@@ -29,8 +30,17 @@ const setNotification = (message: string, type: string) => {
   typeNotification.value = type;
   notification.value = true;
 
+  if (type === "success") {
+    isValidTransactionFailed.value = false;
+  }
+
+  if (type === "error") {
+    isValidTransactionFailed.value = true;
+  }
+
   setTimeout(() => {
     notification.value = false;
+    isValidTransactionFailed.value = false;
   }, 3000);
 };
 
@@ -276,12 +286,16 @@ watch(
               Enter your ABA transectin id, to claim your product
             </label>
             <div class="flex max-w-md items-center gap-4">
-              <input v-model="trxId" type="text" id="voucher" :class="isValidTransaction == true ? 'border-green-500 dark:border-green-500 text-green-500' : ''"
+              <input v-model="trxId" type="text" id="voucher" :class="{
+                'border-green-500 dark:border-green-500 text-green-500': isValidTransaction,
+                'border-red-500 dark:border-red-500 text-red-500': isValidTransactionFailed,
+                'border-gray-300 dark:border-gray-600': !(isValidTransaction || isValidTransactionFailed)
+              }"
                 class="text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500"
                 placeholder="Trx. ID: 173692706018179" required />
               <button @click="TransectionValidate" v-if="isValidTransaction == false" type="button"
                 class="dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 flex items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300">
-                Check
+                Claim
               </button>
             </div>
           </div>
