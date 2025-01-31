@@ -14,8 +14,6 @@ const images = ref([]);
 const quantity = ref(0);
 const comments = ref([]);
 const newComment = ref("");
-const editingCommentId = ref(null);
-const editedCommentContent = ref("");
 const newReply = ref("");
 const isLoading = ref(true);
 
@@ -73,7 +71,6 @@ const fetchComments = async () => {
 };
 
 
-// Post a new comment
 const postComment = async () => {
   if (!newComment.value.trim()) {
     alert("Comment cannot be empty");
@@ -81,22 +78,29 @@ const postComment = async () => {
   }
 
   try {
-    // const { data: user, error: userError } = await supabase.auth.user();
-    // if (userError || !user) throw userError;
-    console.log("Comment:", newComment.value, "User ID:", supabase.auth.user().id);
+    const user = supabase.auth.user();
+    const userName = user?.user_metadata?.full_name || "Unknown User";
+    const productName = product.value?.title || "Unknown Product";
+
+    console.log("Comment:", newComment.value, "User ID:", user.id);
 
     const { error } = await supabase
       .from("comments")
       .insert([
         {
           product_id: parseInt(route.params.id),
-          user_id: supabase.auth.user().id,
+          user_id: user.id,
           message: newComment.value,
           created_at: new Date().toLocaleString('en-US', { timeZone: 'Asia/Phnom_Penh', hour12: true }),
         },
       ]);
 
     if (error) throw error;
+
+    // Format and send the new comment to Telegram (without time)
+    const message = `🔶 [New Comment on ${productName}](https://tinh25.com/product/${route.params.id})\n\n🎭 ${userName}\n👋 ${newComment.value}`;
+    await sendToTelegram(message);
+
     newComment.value = ""; // Reset input field
     fetchComments(); // Refresh comments
   } catch (error) {
@@ -104,46 +108,64 @@ const postComment = async () => {
   }
 };
 
+
 const replyCommentPost = async (commentId) => {
   if (!newReply.value.trim()) {
-    alert("Comment cannot be empty");
+    alert("Reply cannot be empty");
     return;
   }
+
   try {
+    const user = supabase.auth.user();
+    const userName = user?.user_metadata?.full_name || "Unknown User";
+    const productName = product.value?.title || "Unknown Product";
+    const parentComment = comments.value.find(comment => comment.id === commentId)?.message || "Unknown Comment";
+    const parentUser = comments.value.find(comment => comment.id === commentId)?.users?.fullname || "Unknown User";
+
     const { error } = await supabase
       .from("comments")
       .insert([
         {
           parent_id: commentId,
           product_id: parseInt(route.params.id),
-          user_id: supabase.auth.user().id,
+          user_id: user.id,
           message: newReply.value,
           created_at: new Date().toLocaleString('en-US', { timeZone: 'Asia/Phnom_Penh', hour12: true }),
         },
       ]);
 
     if (error) throw error;
-    newComment.value = ""; // Reset input field
+
+    // Format and send the reply to Telegram
+    const message = `🔶 [New Comment on ${productName}](https://tinh25.com/product/${route.params.id})\n\n🎭 *${parentUser}*\n👋 ${parentComment}\n\n       ↪️ *${userName}*\n       👋 ${newReply.value}`;
+
+    await sendToTelegram(message);
+
     newReply.value = "";
     fetchComments(); // Refresh comments
   } catch (error) {
-    console.error("Error posting comment:", error);
+    console.error("Error posting reply:", error);
   }
-}
+};
 
-// Edit a comment
-const editComment = async (commentId, newContent) => {
+
+const sendToTelegram = async (message) => {
+  const BOT_TOKEN = "7641689712:AAHTuJHvk-5f5hpSu1MXBWG5O9m3WYHMS5c"; // Replace with your Telegram bot token
+  const CHAT_ID = "-4729045567"; // Replace with your Telegram group chat ID
+  const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
   try {
-    const { error } = await supabase
-      .from("comments")
-      .update({ content: newContent })
-      .eq("id", commentId);
-
-    if (error) throw error;
-    fetchComments(); // Refresh comments
-    editingCommentId.value = null; // Reset editing state
+    await fetch(TELEGRAM_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: message,
+        parse_mode: "Markdown",
+      }),
+    });
   } catch (error) {
-    console.error("Error updating comment:", error);
+    console.error("Error sending message to Telegram:", error);
   }
 };
 
@@ -189,23 +211,24 @@ onMounted(() => {
 <template>
   <div>
     <Navbar />
-    <div class="mx-auto max-w-6xl px-4 mt-16 sm:px-6 lg:px-8 lg:py-24 grid grid-cols-1 gap-0 lg:grid-cols-2 lg:gap-16 xl:gap-0">
+    <div
+      class="mx-auto max-w-6xl px-4 mt-16 sm:px-6 lg:px-8 lg:py-24 grid grid-cols-1 gap-0 lg:grid-cols-2 lg:gap-16 xl:gap-0">
 
-      <lightbox :images="images"  v-show="!isLoading"/>
-      <div class=" mt-16" v-if="isLoading" >
+      <lightbox :images="images" v-show="!isLoading" />
+      <div class=" mt-16" v-if="isLoading">
         <SkeletonProduct />
       </div>
-      <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="isLoading" />
+      <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20"
+        v-if="isLoading" />
 
       <div class="text-left mt-10 lg:mx-0 mx-auto mt-5 px-0">
-        <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`"
-          class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2">
-          {{ seller }}
+        <router-link :to="`/profile/${seller?.replace(/\s+/g, '-') ?? 'unknown-seller'}`">
+          {{ seller ?? "Unknown Seller" }}
         </router-link>
         <h2 class="text-2xl font-bold w-90 mb-3 lg:mb-6">
           {{ product.title }}
         </h2>
-        <p class="text-[#a1a1a1] max-w-96 mb-5" v-html="product.content.replace(/\n/g, '<br>')">
+        <p class="text-[#a1a1a1] max-w-96 mb-5" v-html="product?.content?.replace(/\n/g, '<br>') ?? 'No description'">
         </p>
         <div class="flex justify-between items-center">
           <div class="flex justify-between mb-6 lg:flex-col md:items-left ">
@@ -269,11 +292,11 @@ onMounted(() => {
           <div v-show="!comment.parent_id" class=" bg-gray-200 dark:bg-gray-800 rounded-lg p-4">
             <article class="p-6 text-base rounded-lg dark:bg-gray-900">
               <footer class="flex justify-between items-center mb-2">
-                <router-link :to="`/profile/${comment.users.fullname.replace(/\s+/g, '-')}`">
+               <router-link :to="`/profile/${comment.users?.fullname?.replace(/\s+/g, '-') ?? 'unknown-user'} `">
                   <div class="flex items-center">
                     <p class="inline-flex items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
-                      <img class="mr-2 w-6 h-6 rounded-full" :src="comment.users.meta.avatar_url" alt="User Avatar">
-                      <p class="truncate">{{ comment.users.fullname }}</p>
+                      <img class="mr-2 w-6 h-6 rounded-full" :src="comment.users?.meta?.avatar_url" alt="User Avatar">
+                      <p class="truncate">{{ comment?.users?.fullname ?? "Unknown User" }}</p>
                     </p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
                       <time :datetime="comment.created_at">{{ new Date(comment.created_at).toLocaleString('en-US', {
@@ -283,7 +306,7 @@ onMounted(() => {
                     </p>
                   </div>
                 </router-link>
-                <button v-show="supabase.auth.user().id === comment.user_id" @click="deleteComment(comment.id)"
+                <button v-show="supabase.auth.user().id === comment?.user_id" @click="deleteComment(comment.id)"
                   class="text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 text-sm rounded-lg focus:outline-none">
                   <i class="fa-solid fa-trash"></i><span class="hidden md:inline"> &nbsp; Delete</span>
                 </button>
@@ -294,11 +317,12 @@ onMounted(() => {
               <div class="flex items-center mt-4 space-x-4">
                 <form>
                   <div class="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                    <router-link :to="`/profile/${supabase.auth.user().user_metadata.full_name.replace(/\s+/g, '-')}`"
+                    <router-link :to="`/profile/${supabase.auth.user().user_metadata?.full_name?.replace(/\s+/g, '-') ?? 'unknown-user'} `"
                       class="inline-flex lg:w-2/4 w-1/5 items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
-                      <img class="mr-2 w-6 h-6 rounded-full"
-                        :src="supabase.auth.user()?.user_metadata?.avatar_url" alt="User Avatar">
-                      <span class="truncate hidden inline-block md:inline">{{ supabase.auth.user().user_metadata.full_name }}</span>
+                      <img class="mr-2 w-6 h-6 rounded-full" :src="supabase.auth.user()?.user_metadata?.avatar_url"
+                        alt="User Avatar">
+                      <span class="truncate hidden inline-block md:inline">{{
+                        supabase.auth.user().user_metadata?.full_name }}</span>
                     </router-link>
                     <textarea id="chat" rows="1" v-model="newReply"
                       class="w-full p-2.5 mr-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
@@ -318,14 +342,14 @@ onMounted(() => {
               <article class="p-6 mb-1 text-base bg-gray-100 rounded-lg dark:bg-gray-900">
                 <footer class="flex justify-between items-center mb-2">
                   <div class="flex items-center">
-                    <router-link :to="`/profile/${reply.users.fullname.replace(/\s+/g, '-')}`">
+                    <router-link :to="`/profile/${reply?.users?.fullname?.replace(/\s+/g, '-') ?? 'unknown-user' }`">
                       <p class="inline-flex items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
-                        <img class="mr-2 w-6 h-6 rounded-full" :src="reply.users.meta.avatar_url" alt="User Avatar">
-                        <span class="truncate whitespace-nowrap">{{ reply.users.fullname }}</span>
+                        <img class="mr-2 w-6 h-6 rounded-full" :src="reply.users?.meta?.avatar_url" alt="User Avatar">
+                        <span class="truncate whitespace-nowrap">{{ reply?.users?.fullname }}</span>
                       </p>
                     </router-link>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
-                      <time :datetime="reply.created_at">{{ new Date(reply.created_at).toLocaleString('en-US', {
+                      <time :datetime="reply.created_at">{{ new Date(reply?.created_at).toLocaleString('en-US', {
                         year:
                           'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                       }) }}</time>
