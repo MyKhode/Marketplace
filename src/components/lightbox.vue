@@ -34,9 +34,9 @@ function changeImage(index) {
 </script>
 
 <template>
-  <div class="product-cart flex flex-col items-center xl:items-start">
+  <div class="product-cart flex grid grid-cols-0 flex-col justify-center items-center">
     <!-- Main Image Section -->
-    <div class="relative px-1 py-4 max-w-none">
+    <div class="relative w-full h-auto px-1 py-4 max-w-lg">
       <!-- Left Arrow -->
       <button
         class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-200 lg:hidden"
@@ -48,7 +48,7 @@ function changeImage(index) {
       <!-- Main Product Image -->
       <img
         :src="displayedImage"
-        class="h-96 object-cover rounded-md shadow-md cursor-pointer"
+        class="w-96 h-auto mx-auto  object-cover rounded-md shadow-md cursor-pointer"
         alt="Main Product"
       />
 
@@ -63,7 +63,7 @@ function changeImage(index) {
 
     <!-- Thumbnail Navigation -->
     <div
-      class="thumbnails grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ml-0 md:ml-0 lg:ml-3 lg:flex lg:gap-4 lg:justify-start xl:w-auto"
+      class="thumbnails mx-auto flex flex-wrap mt-4"
     >
       <div
         v-for="(image, index) in props.images"
@@ -77,7 +77,7 @@ function changeImage(index) {
           <img
             :src="image"
             :class="[
-              'w-20 h-20 rounded-md object-cover border-2 transition-opacity',
+              'w-20 h-auto rounded-md object-cover border-2 transition-opacity',
               index === currentIndex.value
                 ? 'border-orange-500 opacity-70'
                 : 'border-gray-200 hover:opacity-80',

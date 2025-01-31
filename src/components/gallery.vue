@@ -75,6 +75,11 @@ const fetchComments = async () => {
 
 // Post a new comment
 const postComment = async () => {
+  if (!newComment.value.trim()) {
+    alert("Comment cannot be empty");
+    return;
+  }
+
   try {
     // const { data: user, error: userError } = await supabase.auth.user();
     // if (userError || !user) throw userError;
@@ -100,6 +105,10 @@ const postComment = async () => {
 };
 
 const replyCommentPost = async (commentId) => {
+  if (!newReply.value.trim()) {
+    alert("Comment cannot be empty");
+    return;
+  }
   try {
     const { error } = await supabase
       .from("comments")
@@ -180,19 +189,15 @@ onMounted(() => {
 <template>
   <div>
     <Navbar />
-    <div class="lg:flex lg:justify-center lg:items-center lg:gap-10 lg:gap-28 md:gap-16 gap-10 lg:items-center mx-auto lg:mt-28 mt-11 h-full w-full md:w-3/4 lg:w-full xl:w-1/2">
+    <div class="mx-auto max-w-6xl px-4 mt-16 sm:px-6 lg:px-8 lg:py-24 grid grid-cols-1 gap-0 lg:grid-cols-2 lg:gap-16 xl:gap-0">
 
-      <!-- Product Details Left Section -->
-      <div class="lg:w-1/2 w-full lg:flex lg:flex-col lg:justify-between">
-        <lightbox :images="images" v-show="!isLoading" />
-        <div class="mt-16" v-if="isLoading">
-          <SkeletonProduct />
-        </div>
-        <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="isLoading" />
+      <lightbox :images="images"  v-show="!isLoading"/>
+      <div class=" mt-16" v-if="isLoading" >
+        <SkeletonProduct />
       </div>
+      <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="isLoading" />
 
-      <!-- Product Details Right Section -->
-      <div class="text-left mt-5 px-5 w-full flex flex-col justify-between sm:mt-3 sm:px-3 md:mt-4 md:px-4 lg:mt-0 lg:w-1/2 xl:px-6">
+      <div class="text-left mt-10 lg:mx-0 mx-auto mt-5 px-0">
         <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`"
           class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2">
           {{ seller }}
