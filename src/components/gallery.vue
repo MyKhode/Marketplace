@@ -180,15 +180,19 @@ onMounted(() => {
 <template>
   <div>
     <Navbar />
-    <div class="lg:flex lg:justify-center gap-28 lg:items-center mx-auto lg:mt-28 mt-11 h-full lg:w-1/2">
+    <div class="lg:flex lg:justify-center lg:items-center lg:gap-10 lg:gap-28 md:gap-16 gap-10 lg:items-center mx-auto lg:mt-28 mt-11 h-full w-full md:w-3/4 lg:w-full xl:w-1/2">
 
-      <lightbox :images="images"  v-show="!isLoading"/>
-      <div class=" mt-16" v-if="isLoading" >
-        <SkeletonProduct />
+      <!-- Product Details Left Section -->
+      <div class="lg:w-1/2 w-full lg:flex lg:flex-col lg:justify-between">
+        <lightbox :images="images" v-show="!isLoading" />
+        <div class="mt-16" v-if="isLoading">
+          <SkeletonProduct />
+        </div>
+        <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="isLoading" />
       </div>
-      <LoadingIcon class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-20" v-if="isLoading" />
 
-      <div class="text-left lg:mt-0 mt-5 px-5">
+      <!-- Product Details Right Section -->
+      <div class="text-left mt-5 px-5 w-full flex flex-col justify-between sm:mt-3 sm:px-3 md:mt-4 md:px-4 lg:mt-0 lg:w-1/2 xl:px-6">
         <router-link :to="`/profile/${seller.replace(/\s+/g, '-')}`"
           class="text-[#ff7d1a] font-bold uppercase tracking-wide text-sm mb-2">
           {{ seller }}

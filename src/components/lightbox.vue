@@ -34,9 +34,9 @@ function changeImage(index) {
 </script>
 
 <template>
-  <div class="product-cart flex flex-col items-center lg:items-start">
+  <div class="product-cart flex flex-col items-center xl:items-start">
     <!-- Main Image Section -->
-    <div class="relative w-full px-1 py-4 max-w-lg">
+    <div class="relative px-1 py-4 max-w-none">
       <!-- Left Arrow -->
       <button
         class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-200 lg:hidden"
@@ -48,7 +48,7 @@ function changeImage(index) {
       <!-- Main Product Image -->
       <img
         :src="displayedImage"
-        class="w-full h-96 object-cover rounded-md shadow-md cursor-pointer"
+        class="h-96 object-cover rounded-md shadow-md cursor-pointer"
         alt="Main Product"
       />
 
@@ -63,7 +63,7 @@ function changeImage(index) {
 
     <!-- Thumbnail Navigation -->
     <div
-      class="thumbnails mt-4 grid grid-cols-4 gap-2 lg:flex lg:justify-start lg:gap-4 w-full max-w-lg"
+      class="thumbnails grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ml-0 md:ml-0 lg:ml-3 lg:flex lg:gap-4 lg:justify-start xl:w-auto"
     >
       <div
         v-for="(image, index) in props.images"
