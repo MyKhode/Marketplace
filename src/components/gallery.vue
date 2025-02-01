@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { supabase } from "@/services/supabase";
 import lightbox from "./lightbox.vue";
@@ -11,11 +11,13 @@ const route = useRoute();
 const product = ref({});
 const seller = ref("Unknown Seller");
 const images = ref([]);
-const quantity = ref(0);
+const quantity = ref(1);
 const comments = ref([]);
 const newComment = ref("");
 const newReply = ref("");
 const isLoading = ref(true);
+const product_options = ref([]);
+const selectedOption = ref("1");
 
 const cartStore = useCartStore();
 
@@ -53,6 +55,38 @@ async function fetchProductDetails() {
     console.error("Error fetching product details:", error);
   }
 }
+
+const fetchProductOptions = async () => {
+  try {
+    const { data: optionsData, error: optionsError } = await supabase
+      .from("product_options")
+      .select("*")
+      .eq("product_id", parseInt(route.params.id));
+    if (optionsError) throw optionsError;
+    product_options.value = optionsData || [];
+    console.log("Product options:", product_options.value);
+  } catch (error) {
+    console.error("Error fetching product options:", error);
+  } finally {
+    isLoading.value = false;
+    if (product.value && product.value.title) {
+      fetchComments();
+    }
+  }
+}
+
+const computedPrice = computed(() => {
+  const selectedOptionData = product_options.value.find(
+    (option) => option.id === selectedOption.value
+  );
+  if (selectedOptionData) {
+    return selectedOptionData.price - product.value.discount;
+  }
+  if (product_options.value.length > 0) {
+    return product_options.value[0].price - product.value.discount; // Default to the first product option's price
+  }
+  return product.value.price;
+});
 
 // Fetch comments
 const fetchComments = async () => {
@@ -139,10 +173,10 @@ const replyCommentPost = async (commentId) => {
     // Format and send the reply to Telegram
     const message = `🔶 [New Comment on ${productName}](https://tinh25.com/product/${route.params.id})\n\n🎭 *${parentUser}*\n👋 ${parentComment}\n\n       ↪️ *${userName}*\n       👋 ${newReply.value}`;
 
+    fetchComments(); // Refresh comments
     await sendToTelegram(message);
 
     newReply.value = "";
-    fetchComments(); // Refresh comments
   } catch (error) {
     console.error("Error posting reply:", error);
   }
@@ -188,15 +222,25 @@ const deleteComment = async (commentId) => {
 watch(() => route.params.id, fetchProductDetails, { immediate: true });
 
 function addCartButton() {
+  // console.log("computedPrice:", computedPrice.value);
   if (quantity.value > 0) {
+    const selectedOptionData = product_options.value.find(
+      (option) => option.id === selectedOption.value
+    );
     const item = {
       product_id: product.value.product_id,
       title: product.value.title,
-      price: product.value.price,
+      price: selectedOptionData
+        ? selectedOptionData.price - product.value.discount
+        : product.value.price - product.value.discount,
       discount: product.value.discount,
       thumbnail: product.value.thumbnail,
       quantity: quantity.value,
+      options: product_options.value && selectedOptionData
+        ? selectedOptionData.name
+        : product_options.value.length > 0 ? product_options.value[0].name : null
     };
+    console.log("item:", item);
     cartStore.addItem(item);
   }
 }
@@ -205,6 +249,8 @@ function addCartButton() {
 onMounted(() => {
   fetchProductDetails();
   fetchComments();
+  fetchProductOptions();
+  cartStore.loadCartFromSupabase();
 });
 </script>
 
@@ -230,36 +276,53 @@ onMounted(() => {
         </h2>
         <p class="text-[#a1a1a1] max-w-96 mb-5" v-html="product?.content ?? 'No description'">
         </p>
-        <div class="flex justify-between items-center">
+        <!-- Options -->
+        <div class="flex flex-col gap-2">
+          <p class="text-sm font-medium">Options</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div v-for="option in product_options" :key="option.id" class="flex items-center">
+              <input type="radio" :id="option?.id" :value="option?.id" v-model="selectedOption" name="option"
+                class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+              <label :for="option?.id" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ option?.name }}
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- Price and Stock  -->
+        <div class="flex justify-between items-center mt-7">
           <div class="flex justify-between mb-6 lg:flex-col md:items-left ">
             <div class="flex items-center">
-              <p class="text-2xl font-bold me-3">${{ product.price - product.discount }}</p>
+              <p class="text-2xl font-bold me-3">${{ product_options.length === 0 ? (product.price - product.discount) :
+                computedPrice }}</p>
+
               <a v-if="product.discount" class="bg-[#ff7d1a33] text-sm px-2 rounded-md">{{ (((product.price -
-                (product.price - product.discount)) / product.price) * 100).toFixed(2) }}%</a>
+                (computedPrice)) / product.price) * 100).toFixed(2) }}%</a>
             </div>
-            <del v-if="product.discount" class="text-[#a1a1a1] mt-1 md:ml-0 ml-3"> ${{ product.price.toFixed(2) }}</del>
+            <del v-if="product.discount" class="text-[#a1a1a1] mt-1 md:ml-0 ml-3"> ${{ computedPrice + product.discount
+              }}</del>
           </div>
           <div class="text-left mb-5"><span class="text-sm text-green-600">Stock</span> <span
               class="text-md text-gray-600"> {{
                 product.stock }}</span></div>
         </div>
-        <div class="lg:flex lg:justify-between md:w-full w-1/2">
+        <div class="flex flex-col lg:flex-row lg:justify-between w-full lg:w-auto space-y-4 lg:space-y-0">
           <div
-            class="quantity flex w-full h-12 lg:w-32 bg-[var(--color-background-mute)] rounded-md justify-between items-center mb-3">
-            <button @click="quantity > 0 && quantity < product.stock ? quantity-- : quantity = 0">
-              -
+            class="flex items-center justify-between w-full lg:w-32 h-12 bg-gray-100 dark:bg-gray-800 rounded-md p-2 shadow-sm">
+            <button @click="quantity > 1 && quantity < product.stock ? quantity-- : quantity = 1"
+              class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+              <i class="fa-solid fa-minus"></i>
             </button>
-            <p>{{ quantity }}</p>
-            <button @click="quantity < product.stock ? quantity++ : quantity = product.stock">
-              +
+            <p class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ quantity }}</p>
+            <button @click="quantity < product.stock ? quantity++ : quantity = product.stock"
+              class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+              <i class="fa-solid fa-plus"></i>
             </button>
           </div>
           <button @click="addCartButton"
-            class="flex justify-center items-center rounded-md shadow-2xl md:w-60 h-12 md:h-auto ml-0 md:text-base text-sm bg-[#ff7d1a] text-white hover:bg-[#ff7d1a80] md:px-10 px-5 md:py-3 py-2 md:ml-10 ml-5">
-            <i class="fa-solid fa-cart-plus md:mr-3 mr-1"></i>
-            <p class="md:m-0 m-1">
-              Add to cart
-            </p>
+            class="flex items-center justify-center w-full lg:w-auto h-12 px-6 py-3 bg-orange-500 text-white rounded-md shadow-lg hover:bg-orange-600 transition duration-300 ease-in-out transform hover:scale-105">
+            <i class="fa-solid fa-cart-plus mr-2"></i>
+            <span class="font-medium text-sm lg:text-base">Add to cart</span>
           </button>
         </div>
       </div>
@@ -292,11 +355,11 @@ onMounted(() => {
           <div v-show="!comment.parent_id" class=" bg-gray-200 dark:bg-gray-800 rounded-lg p-4">
             <article class="p-6 text-base rounded-lg dark:bg-gray-900">
               <footer class="flex justify-between items-center mb-2">
-               <router-link :to="`/profile/${comment.users?.fullname?.replace(/\s+/g, '-') ?? 'unknown-user'} `">
+                <router-link :to="`/profile/${comment.users?.fullname?.replace(/\s+/g, '-') ?? 'unknown-user'} `">
                   <div class="flex items-center">
                     <p class="inline-flex items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
                       <img class="mr-2 w-6 h-6 rounded-full" :src="comment.users?.meta?.avatar_url" alt="User Avatar">
-                      <p class="truncate">{{ comment?.users?.fullname ?? "Unknown User" }}</p>
+                    <p class="truncate">{{ comment?.users?.fullname ?? "Unknown User" }}</p>
                     </p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
                       <time :datetime="comment.created_at">{{ new Date(comment.created_at).toLocaleString('en-US', {
@@ -317,7 +380,8 @@ onMounted(() => {
               <div class="flex items-center mt-4 space-x-4">
                 <form>
                   <div class="flex items-center px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                    <router-link :to="`/profile/${supabase.auth.user().user_metadata?.full_name?.replace(/\s+/g, '-') ?? 'unknown-user'} `"
+                    <router-link
+                      :to="`/profile/${supabase.auth.user().user_metadata?.full_name?.replace(/\s+/g, '-') ?? 'unknown-user'} `"
                       class="inline-flex lg:w-2/4 w-1/5 items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
                       <img class="mr-2 w-6 h-6 rounded-full" :src="supabase.auth.user()?.user_metadata?.avatar_url"
                         alt="User Avatar">
@@ -342,7 +406,7 @@ onMounted(() => {
               <article class="p-6 mb-1 text-base bg-gray-100 rounded-lg dark:bg-gray-900">
                 <footer class="flex justify-between items-center mb-2">
                   <div class="flex items-center">
-                    <router-link :to="`/profile/${reply?.users?.fullname?.replace(/\s+/g, '-') ?? 'unknown-user' }`">
+                    <router-link :to="`/profile/${reply?.users?.fullname?.replace(/\s+/g, '-') ?? 'unknown-user'}`">
                       <p class="inline-flex items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white">
                         <img class="mr-2 w-6 h-6 rounded-full" :src="reply.users?.meta?.avatar_url" alt="User Avatar">
                         <span class="truncate whitespace-nowrap">{{ reply?.users?.fullname }}</span>

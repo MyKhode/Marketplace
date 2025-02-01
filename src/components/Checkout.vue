@@ -137,12 +137,29 @@ const initializeCheckoutInfo = async () => {
     setNotification("Unexpected error while fetching user data!", "error");
   }
 };
+const UpdateUserInfo = async () => {
+  try {
+    const { error } = await supabase
+      .from("users")
+      .update({ phone_number: phone.value, address: address.value })
+      .eq("id", supabase.auth.user()?.id);
+
+    if (error) {  
+      setNotification("Failed to update user information!", "error");
+      return;
+    }
+    setNotification("User information successfully updated!", "success");
+  } catch (err) {
+    setNotification("An error occurred while updating user information!", "error");
+  }
+};
 
 const TransectionValidate = async () => {
   if (!full_name.value || !phone.value || !address.value) {
     setNotification("Please fill in all required fields!", "warning");
     return;
   }
+  UpdateUserInfo();
   if (!trxId.value) {
     setNotification("Please enter a valid transaction ID!", "warning");
     return;
@@ -311,11 +328,10 @@ watch(
                   <div class="text-lg font-semibold text-gray-900">
                     {{ product.title }}
                   </div>
-                  <div class="text-sm text-gray-500">{{ product.meta_title.length > 35 ? product.meta_title.substring(0,
-                    35) + "..." : product.meta_title }}</div>
+                  <div class="text-sm text-gray-500">Options Type: {{ product.options ? product.options : 'default' }}</div>
                 </dt>
                 <div>
-                  <dd class="dark:text-white text-right text-base font-medium text-gray-900">
+                  <dd class="dark:text-white truncate text-right text-base font-medium text-gray-900">
                     $ {{ product.price.toFixed(2) }} * {{ product.quantity }}
                   </dd>
                   <del v-if="product.discount">

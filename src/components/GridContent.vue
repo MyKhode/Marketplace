@@ -246,11 +246,12 @@ export default {
     // 7. Click Event Handler (Start)
     let clickTimeout = null;
 
-    // Handle single click (navigate to product)
+    // Handle single click (navigate to product and scroll to top)
     const handleClick = (product) => {
       if (clickTimeout) clearTimeout(clickTimeout);
       clickTimeout = setTimeout(() => {
-        router.push(`/product/${product.id}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+        router.push(`/product/${product.id}`); // Navigate to product page
       }, 250); // Delay to distinguish single click
     };
 

@@ -13,6 +13,7 @@ interface CartItem {
   discount: number;
   thumbnail: string;
   quantity: number;
+  options: string;
   seller_id: string;
 }
 
@@ -43,11 +44,16 @@ export const useCartStore = defineStore("cart", () => {
   const addItem = async (item: CartItem) => {
     if (!user.value) return;
 
+    // console.log("item price:", item.price);
     const { error } = await supabase.from("cart").upsert({
       user_id: user.value.id,
       product_id: item.product_id,
       quantity: item.quantity,
+      price: item.price,
+      options: item.options,
     });
+    // console item
+    console.log("item: --", item.options);
 
     if (error) {
       // console.error("Error adding item to cart:", error);
@@ -80,7 +86,7 @@ export const useCartStore = defineStore("cart", () => {
     const { data, error } = await supabase
       .from("cart")
       .select(
-        `cart_id, product_id, quantity, product:product_id (title, price, discount, meta_title, thumbnail, seller_id)`
+        `cart_id, product_id, quantity, price, options, product:product_id (title, price, discount, meta_title, thumbnail, seller_id)`
       )
       .eq("user_id", user.value.id);
 
@@ -98,7 +104,8 @@ export const useCartStore = defineStore("cart", () => {
             product_id: item.product_id,
             title: item.product.title,
             meta_title: item.product.meta_title,
-            price: item.product.price - item.product.discount,
+            price: item.price,
+            options: item.options,
             discount: item.product.discount,
             thumbnail: item.product.thumbnail,
             quantity: item.quantity,
@@ -160,6 +167,7 @@ export const useCartStore = defineStore("cart", () => {
         address: shippingAddress,
         phone_number: phone_number,
         full_name: full_name,
+        options: item.options,
         // seller_id: item.seller_id,
         // thumbnail: item.thumbnail,
       }));
@@ -187,18 +195,14 @@ export const useCartStore = defineStore("cart", () => {
         throw new Error(`Failed to clear cart: ${clearCartError.message}`);
 
       // Construct message for Telegram
-      let message = `🚀 *New Order Received* 🚀\n\n`;
-      message += `👤 *Customer Name:* ${full_name}\n📞 *Phone:* ${phone_number}\n📍 *Address:* ${shippingAddress}\n\n`;
+      let message = `🗞 *New Order Received*\n\n`;
+      message += `👤 *Customer Name:* ${full_name}\n🤙 *Phone:* ${phone_number}\n🏠 *Address:* ${shippingAddress}\n\n`;
       message += `🛒 *Order Details:*\n`;
       cartItems.value.forEach((item) => {
-        message += `  • ${item.title} - ${item.quantity} x $${item.price}\n`;
+        console.log('item.options:', item.options);
+        message += `  • ${item.title} - ${item.quantity} x $${item.price}, Option: ${item.options}\n`;
       });
-      cartItems.value.forEach((item, index) => {
-        message += `#${index + 1} *${item.title}* - ${item.quantity} x $${
-          item.price
-        }\n`;
-      });
-      message += `\n💰 *Total Price:* $${totalPrice}\n🕒 *Order Time:* ${new Date().toLocaleString()}`;
+      message += `\n🫰 *Total Price:* $${totalPrice}\n⏰ *Order Time:* ${new Date().toLocaleString()}`;
 
       // Send order details to Telegram
       await sendToTelegram(message);
