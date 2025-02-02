@@ -148,7 +148,6 @@ const UpdateUserInfo = async () => {
       setNotification("Failed to update user information!", "error");
       return;
     }
-    setNotification("User information successfully updated!", "success");
   } catch (err) {
     setNotification("An error occurred while updating user information!", "error");
   }
