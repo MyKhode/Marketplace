@@ -278,7 +278,7 @@ onMounted(() => {
         </p>
         <!-- Options -->
         <div class="flex flex-col gap-2">
-          <p class="text-sm font-medium">Options</p>
+          <p class="text-sm font-medium" v-if="product_options.length > 0">Options</p>
           <div class="grid grid-cols-2 gap-2">
             <div v-for="option in product_options" :key="option.id" class="flex items-center">
               <input type="radio" :id="option?.id" :value="option?.id" v-model="selectedOption" name="option"
@@ -296,11 +296,13 @@ onMounted(() => {
               <p class="text-2xl font-bold me-3">${{ product_options.length === 0 ? (product.price - product.discount) :
                 computedPrice }}</p>
 
-              <a v-if="product.discount" class="bg-[#ff7d1a33] text-sm px-2 rounded-md">{{ (((product.price -
-                (computedPrice)) / product.price) * 100).toFixed(2) }}%</a>
+              <a v-if="product.discount" class="bg-[#ff7d1a33] text-sm px-2 rounded-md">{{ product_options.length === 0
+                ? ((product.discount / computedPrice) * 100).toFixed(2) : (((product.price -
+                  (computedPrice)) / product.price) * 100).toFixed(2) }}%</a>
             </div>
-            <del v-if="product.discount" class="text-[#a1a1a1] mt-1 md:ml-0 ml-3"> ${{ computedPrice + product.discount
-              }}</del>
+            <del v-if="product.discount" class="text-[#a1a1a1] mt-1 md:ml-0 ml-3">${{ product_options.length === 0 ?
+              (computedPrice) :
+              computedPrice + product.discount }}</del>
           </div>
           <div class="text-left mb-5"><span class="text-sm text-green-600">Stock</span> <span
               class="text-md text-gray-600"> {{

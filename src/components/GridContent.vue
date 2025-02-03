@@ -215,7 +215,7 @@ export default {
     // 3. Watchers
     watch(() => route.params.id, fetchProducts);
     watch(activeCategory, fetchProducts);
-    watch(wishlist, fetchWishlist);
+    // watch(wishlist, fetchWishlist);
 
     // 4. Computed Filter
     const filteredProducts = computed(() => {
