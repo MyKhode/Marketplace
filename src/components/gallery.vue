@@ -61,7 +61,8 @@ const fetchProductOptions = async () => {
     const { data: optionsData, error: optionsError } = await supabase
       .from("product_options")
       .select("*")
-      .eq("product_id", parseInt(route.params.id));
+      .eq("product_id", parseInt(route.params.id))
+      .order("id", { ascending: true });
     if (optionsError) throw optionsError;
     product_options.value = optionsData || [];
     console.log("Product options:", product_options.value);
